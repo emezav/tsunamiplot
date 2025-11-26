@@ -490,8 +490,16 @@ namespace TsunamiPlot
     }
 
     // Get the wave data from the time series
-    // Use 0 for h_first_wave and delta_first_wave to get all waves
-    WaveData waveData(pointData, 0.0, 0.0);
+    float hFirstWave = 0.001f;      // Minimum height to consider a first wave in meters (1 centimeter)
+    float deltaFirstWave = 1.0f; // Minimum time (minutes) to consider a first wave
+
+    // If event type is near, adjust parameters
+    if (eventType == "near") {
+      hFirstWave = 0.01f;      // Minimum height to consider a first wave in meters (10 centimeters)
+      deltaFirstWave = 10.0f; // Minimum time (minutes) to consider a first wave
+    }
+
+    WaveData waveData(pointData, hFirstWave, deltaFirstWave);
 
     // Get first wave and max height points
     vector<WavePoint> firstWave = waveData.firstWave();
@@ -721,6 +729,12 @@ namespace TsunamiPlot
 
     std::stringstream removeFilesSs;
 
+    int heightPrecision = 4;
+    if (eventType == "near")
+    {
+      heightPrecision = 2;
+    }
+
     for (size_t i = 0; i < firstWave.size(); i++)
     {
       if (i >= gauges.size())
@@ -733,21 +747,33 @@ namespace TsunamiPlot
 
       // Get first wave data
       float h_first_wave = firstWave[i].height;
-      float t_first_wave = firstWave[i].time * timeResFactor;
+      float t_first_wave = firstWave[i].time;
 
       // Get max height data
       float h_max_wave = maxHeight[i].height;
-      float t_max_wave = maxHeight[i].time * timeResFactor;
+      float t_max_wave = maxHeight[i].time;
 
       // Output legend row for the gauge with its first wave data
       legendOfs << "S 0.5c c 0.2c " << color << " 0/0/0" << endl;
       legendOfs << "L - L " << Strings::replaceAll(gauges.name[i], "_", " ") << endl;
       // Plot t_first_wave and h_first_wave in any case
 
-      legendOfs << "L - C " << std::fixed << std::setprecision(1) << t_first_wave << endl;
-      legendOfs << "L - C " << std::fixed << std::setprecision(4) << h_first_wave << endl;
-      legendOfs << "L - C " << std::fixed << std::setprecision(1) << t_max_wave << endl;
-      legendOfs << "L - C " << std::fixed << std::setprecision(4) << h_max_wave << endl;
+
+      // If t_first_wave or t_max_wave are both greater than zero, show the values, otherwise show dashes.
+      if (t_first_wave > 0.0f || t_max_wave > 0.0f)
+      {
+        legendOfs << "L - C " << std::fixed << std::setprecision(1) << t_first_wave << endl;
+        legendOfs << "L - C " << std::fixed << std::setprecision(heightPrecision) << h_first_wave << endl;
+        legendOfs << "L - C " << std::fixed << std::setprecision(1) << t_max_wave << endl;
+        legendOfs << "L - C " << std::fixed << std::setprecision(heightPrecision) << h_max_wave << endl;
+      }
+      else
+      {
+        legendOfs << "L - C --" << endl;
+        legendOfs << "L - C --" << endl;
+        legendOfs << "L - C --" << endl;
+        legendOfs << "L - C --" << endl;
+      }
 
       // cout << "Gauge " << gauges.name[i] << ": First wave at " << t_first_wave << " " << timeUnits << " with height " << h_first_wave << " m. Max wave at " << t_max_wave << " " << timeUnits << " with height " << h_max_wave << " m." << endl;
 
@@ -924,9 +950,6 @@ namespace TsunamiPlot
       seriesPerPlot = 4; // Default to 4 series per plot
     }
 
-    float hFirstWave = 0.3f;      // Minimum height to consider a first wave
-    float deltaFirstWave = 15.0f; // Minimum time (minutes) to consider a first wave
-
     std::map<int, vector<string>> tileOffsets = gridLayout;
 
     int maxTilesPerImage = tileOffsets.size(); // Maximum number of tiles per image
@@ -1017,7 +1040,17 @@ namespace TsunamiPlot
 
     int seriesCount = pointData.series_count();
 
+
     // Get the wave data from the time series
+    float hFirstWave = 0.001f;      // Minimum height to consider a first wave in meters (1 centimeter)
+    float deltaFirstWave = 1.0f; // Minimum time (minutes) to consider a first wave
+
+    // If event type is near, adjust parameters
+    if (eventType == "near") {
+      hFirstWave = 0.01f;      // Minimum height to consider a first wave in meters (10 centimeters)
+      deltaFirstWave = 10.0f; // Minimum time (minutes) to consider a first wave
+    }
+
     WaveData waveData(pointData, hFirstWave, deltaFirstWave);
 
     // Get first wave and max height points
