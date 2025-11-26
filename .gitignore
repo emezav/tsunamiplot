@@ -4,3 +4,21 @@
 *.ptx
 *.cubin
 *.fatbin
+*.exe
+build/
+build/*
+docs/
+docs/*
+*.asc
+*.asc.*
+third_party/
+third_party/*
+grids/
+result/
+deform/
+# Don't commit third party headers or source files
+include/geo.h
+# Ignore documentation and other resource directories
+pdf/
+misc/
+*.png
