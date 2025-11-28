@@ -55,23 +55,288 @@ namespace TsunamiPlot
    */
   vector<string> getPointPalette()
   {
+    // return {
+    //     "104/138/232",
+    //     "195/61/105",
+    //     "46/165/151",
+    //     "132/86/206",
+    //     "224/121/65",
+    //     "55/89/206",
+    //     "150/34/73",
+    //     "9/111/100",
+    //     "98/55/167",
+    //     "168/68/1",
+    //     "39/62/165",
+    //     "120/13/53",
+    //     "3/82/74",
+    //     "74/35/139",
+    //     "126/49/3",
+    //     "27/43/136"
+    //   };
+    //  return {
+    //     "191/225/244",
+    //     "153/219/199",
+    //     "250/238/207",
+    //     "238/207/223",
+    //     "153/153/153",
+    //     "230/159/0",
+    //     "86/180/233",
+    //     "0/158/115",
+    //     "240/228/66",
+    //     "0/114/178",
+    //     "213/94/0",
+    //     "204/121/167",
+    //     "0/0/0"};
     return {
-        "255/0/0",     // Red
-        "0/0/255",     // Blue
-        "0/255/0",     // Green
-        "255/255/0",   // Yellow
-        "0/255/255",   // Cyan
-        "255/0/255",   // Magenta
-        "255/165/0",   // Orange
-        "128/0/128",   // Purple
-        "165/42/42",   // Brown
-        "255/192/203", // Pink
-        "50/205/50",   // Lime
-        "0/128/128",   // Teal
-        "173/216/230", // Light Navy
-        "128/128/0",   // Olive
-        "128/0/0"      // Maroon
-    };
+        "0/102/0",
+        "0/0/102",
+        "170/85/68",
+        "0/136/204",
+        "255/17/255",
+        "255/0/119",
+        "136/255/153",
+        "136/102/255",
+        "85/136/119",
+        "102/0/68",
+        "221/255/0",
+        "255/136/0",
+        "119/102/0",
+        "187/0/153",
+        "153/119/153",
+        "136/170/0",
+        "34/51/102",
+        "34/51/0",
+        "170/187/119",
+        "0/187/34",
+        "255/85/85",
+        "255/170/119",
+        "68/17/0",
+        "255/153/170",
+        "0/187/136",
+        "153/153/255",
+        "136/221/255",
+        "0/17/187",
+        "153/0/0",
+        "119/68/153",
+        "187/255/221",
+        "187/153/136",
+        "170/17/68",
+        "85/68/68",
+        "153/17/238",
+        "221/255/119",
+        "170/85/0",
+        "0/85/102",
+        "221/204/255",
+        "153/255/68",
+        "0/68/187",
+        "187/85/136",
+        "221/102/238",
+        "255/221/0",
+        "119/0/153",
+        "255/221/170",
+        "0/255/119",
+        "204/153/0",
+        "85/170/68",
+        "51/187/187",
+        "34/0/34",
+        "153/170/187",
+        "0/255/204",
+        "238/255/170",
+        "255/0/204",
+        "221/68/17",
+        "119/85/51",
+        "255/85/170",
+        "187/153/85",
+        "0/85/170",
+        "0/85/51",
+        "255/102/136",
+        "102/119/68",
+        "136/68/85",
+        "0/153/187",
+        "187/0/204",
+        "68/0/85",
+        "136/187/255",
+        "119/119/187",
+        "136/221/85",
+        "0/136/255",
+        "170/0/102",
+        "102/0/34",
+        "187/119/221",
+        "238/119/68",
+        "0/204/102",
+        "187/204/187",
+        "238/187/204",
+        "51/136/85",
+        "136/221/153",
+        "85/119/153",
+        "102/136/34",
+        "85/51/85",
+        "119/51/0",
+        "119",
+        "85/68/255",
+        "119/187/153",
+        "0/34/17",
+        "68/85/0",
+        "170/221/34",
+        "221/153/204",
+        "136/17/119",
+        "204/204/34",
+        "0/0/68",
+        "170/221/119",
+        "204/136/51",
+        "255/136/119",
+        "255/187/170",
+        "170/170/68",
+        "255/0/85",
+        "0/68/221",
+        "0/34/51",
+        "51/34/0",
+        "187/85/255",
+        "136/238/238",
+        "255/0/51",
+        "0/68/0",
+        "51/17/153",
+        "238/102/204",
+        "170/102/170",
+        "187/119/119",
+        "119/68/187",
+        "68/17/34",
+        "119/17/17",
+        "255/170/0",
+        "68/85/68",
+        "102/102/204",
+        "255/17/170",
+        "51/221/17",
+        "255/187/85",
+        "255/255/221",
+        "119/34/204",
+        "85/170/0",
+        "51/51/136",
+        "85/68/0",
+        "221/170/255",
+        "0/255/170",
+        "0/136/0",
+        "153/102/34",
+        "204/0/51",
+        "255/255/85",
+        "204/238/255",
+        "187/85/102",
+        "0/187/255",
+        "0/85/136",
+        "204/136/102",
+        "255/136/187",
+        "85/119/255",
+        "102/238/204",
+        "68/0/221",
+        "221/204/119",
+        "255/85/255",
+        "170/68/187",
+        "255/153/68",
+        "221/51/119",
+        "255/102/0",
+        "136/153/119",
+        "187/68/153",
+        "153/136/0",
+        "0/17/51",
+        "119/85/136",
+        "187/68/51",
+        "0/221/255",
+        "153/153/204",
+        "187/119/255",
+        "102/238/85",
+        "102/204/0",
+        "85/34/136",
+        "0/153/136",
+        "187/221/170",
+        "102/153/238",
+        "119/255/0",
+        "85/85/119",
+        "136/0/68",
+        "238/187/0",
+        "51/34/51",
+        "68/17/68",
+        "136/119/68",
+        "119/170/102",
+        "204/187/187",
+        "136/187/187",
+        "255/85/221",
+        "204/170/68",
+        "187/255/170",
+        "0/119/119",
+        "221/136/0",
+        "119/51/34",
+        "238/187/119",
+        "204/0/17",
+        "119/85/102",
+        "187/153/170",
+        "204/187/153",
+        "255/255/136",
+        "0/136/51",
+        "221/102/17",
+        "136/187/68",
+        "187/170/17",
+        "204/119/68",
+        "119/51/102",
+        "187/204/238",
+        "153/51/0",
+        "17/221/153",
+        "17/51/51",
+        "204/68/85",
+        "34/0/0",
+        "238/51/102",
+        "153/0/34",
+        "204/0/136",
+        "187/204/85",
+        "51/68/85",
+        "68/68/34",
+        "204/51/255",
+        "221/255/238",
+        "187/255/102",
+        "102/51/51",
+        "51/85/34",
+        "102/153/204",
+        "0/255/85",
+        "68/119/51",
+        "153/119/119",
+        "221/119/119",
+        "136/136/51",
+        "221/119/187",
+        "170/136/204",
+        "68/170/102",
+        "238/0/136",
+        "85/68/136",
+        "119/255/187",
+        "85/204/119",
+        "170/102/136",
+        "255/136/255",
+        "17/68/51",
+        "119/0/255",
+        "yellow",
+        "17/119/204",
+        "170/0/170",
+        "255/102/68",
+        "187/255/34",
+        "85/85/221",
+        "187/255/136",
+        "170/136/255",
+        "0/170/51",
+        "153/102/85",
+        "119/102/85",
+        "221/255/85",
+        "85/51/17",
+        "102/153/170",
+        "0/51/85",
+        "51/119/136",
+        "0/34/102",
+        "0/204/187",
+        "85/238/119",
+        "34/170/255",
+        "255/170/204",
+        "221/34/204",
+        "0/34/136",
+        "255/221/68",
+        "0/51/17",
+        "68/102/102"};
   }
 
   /**
@@ -80,13 +345,257 @@ namespace TsunamiPlot
    */
   vector<string> getLinePalette()
   {
+
     return {
-        "3/57/108",    // Blue
-        "97/208/79",   // Green
-        "223/83/107",  // Red
-        "169/169/169", // Dark gray
-        "252/145/58",  // Magenta
-    };
+        "0/102/0",
+        "0/0/102",
+        "170/85/68",
+        "0/136/204",
+        "255/17/255",
+        "255/0/119",
+        "136/255/153",
+        "136/102/255",
+        "85/136/119",
+        "102/0/68",
+        "221/255/0",
+        "255/136/0",
+        "119/102/0",
+        "187/0/153",
+        "153/119/153",
+        "136/170/0",
+        "34/51/102",
+        "34/51/0",
+        "170/187/119",
+        "0/187/34",
+        "255/85/85",
+        "255/170/119",
+        "68/17/0",
+        "255/153/170",
+        "0/187/136",
+        "153/153/255",
+        "136/221/255",
+        "0/17/187",
+        "153/0/0",
+        "119/68/153",
+        "187/255/221",
+        "187/153/136",
+        "170/17/68",
+        "85/68/68",
+        "153/17/238",
+        "221/255/119",
+        "170/85/0",
+        "0/85/102",
+        "221/204/255",
+        "153/255/68",
+        "0/68/187",
+        "187/85/136",
+        "221/102/238",
+        "255/221/0",
+        "119/0/153",
+        "255/221/170",
+        "0/255/119",
+        "204/153/0",
+        "85/170/68",
+        "51/187/187",
+        "34/0/34",
+        "153/170/187",
+        "0/255/204",
+        "238/255/170",
+        "255/0/204",
+        "221/68/17",
+        "119/85/51",
+        "255/85/170",
+        "187/153/85",
+        "0/85/170",
+        "0/85/51",
+        "255/102/136",
+        "102/119/68",
+        "136/68/85",
+        "0/153/187",
+        "187/0/204",
+        "68/0/85",
+        "136/187/255",
+        "119/119/187",
+        "136/221/85",
+        "0/136/255",
+        "170/0/102",
+        "102/0/34",
+        "187/119/221",
+        "238/119/68",
+        "0/204/102",
+        "187/204/187",
+        "238/187/204",
+        "51/136/85",
+        "136/221/153",
+        "85/119/153",
+        "102/136/34",
+        "85/51/85",
+        "119/51/0",
+        "119",
+        "85/68/255",
+        "119/187/153",
+        "0/34/17",
+        "68/85/0",
+        "170/221/34",
+        "221/153/204",
+        "136/17/119",
+        "204/204/34",
+        "0/0/68",
+        "170/221/119",
+        "204/136/51",
+        "255/136/119",
+        "255/187/170",
+        "170/170/68",
+        "255/0/85",
+        "0/68/221",
+        "0/34/51",
+        "51/34/0",
+        "187/85/255",
+        "136/238/238",
+        "255/0/51",
+        "0/68/0",
+        "51/17/153",
+        "238/102/204",
+        "170/102/170",
+        "187/119/119",
+        "119/68/187",
+        "68/17/34",
+        "119/17/17",
+        "255/170/0",
+        "68/85/68",
+        "102/102/204",
+        "255/17/170",
+        "51/221/17",
+        "255/187/85",
+        "255/255/221",
+        "119/34/204",
+        "85/170/0",
+        "51/51/136",
+        "85/68/0",
+        "221/170/255",
+        "0/255/170",
+        "0/136/0",
+        "153/102/34",
+        "204/0/51",
+        "255/255/85",
+        "204/238/255",
+        "187/85/102",
+        "0/187/255",
+        "0/85/136",
+        "204/136/102",
+        "255/136/187",
+        "85/119/255",
+        "102/238/204",
+        "68/0/221",
+        "221/204/119",
+        "255/85/255",
+        "170/68/187",
+        "255/153/68",
+        "221/51/119",
+        "255/102/0",
+        "136/153/119",
+        "187/68/153",
+        "153/136/0",
+        "0/17/51",
+        "119/85/136",
+        "187/68/51",
+        "0/221/255",
+        "153/153/204",
+        "187/119/255",
+        "102/238/85",
+        "102/204/0",
+        "85/34/136",
+        "0/153/136",
+        "187/221/170",
+        "102/153/238",
+        "119/255/0",
+        "85/85/119",
+        "136/0/68",
+        "238/187/0",
+        "51/34/51",
+        "68/17/68",
+        "136/119/68",
+        "119/170/102",
+        "204/187/187",
+        "136/187/187",
+        "255/85/221",
+        "204/170/68",
+        "187/255/170",
+        "0/119/119",
+        "221/136/0",
+        "119/51/34",
+        "238/187/119",
+        "204/0/17",
+        "119/85/102",
+        "187/153/170",
+        "204/187/153",
+        "255/255/136",
+        "0/136/51",
+        "221/102/17",
+        "136/187/68",
+        "187/170/17",
+        "204/119/68",
+        "119/51/102",
+        "187/204/238",
+        "153/51/0",
+        "17/221/153",
+        "17/51/51",
+        "204/68/85",
+        "34/0/0",
+        "238/51/102",
+        "153/0/34",
+        "204/0/136",
+        "187/204/85",
+        "51/68/85",
+        "68/68/34",
+        "204/51/255",
+        "221/255/238",
+        "187/255/102",
+        "102/51/51",
+        "51/85/34",
+        "102/153/204",
+        "0/255/85",
+        "68/119/51",
+        "153/119/119",
+        "221/119/119",
+        "136/136/51",
+        "221/119/187",
+        "170/136/204",
+        "68/170/102",
+        "238/0/136",
+        "85/68/136",
+        "119/255/187",
+        "85/204/119",
+        "170/102/136",
+        "255/136/255",
+        "17/68/51",
+        "119/0/255",
+        "yellow",
+        "17/119/204",
+        "170/0/170",
+        "255/102/68",
+        "187/255/34",
+        "85/85/221",
+        "187/255/136",
+        "170/136/255",
+        "0/170/51",
+        "153/102/85",
+        "119/102/85",
+        "221/255/85",
+        "85/51/17",
+        "102/153/170",
+        "0/51/85",
+        "51/119/136",
+        "0/34/102",
+        "0/204/187",
+        "85/238/119",
+        "34/170/255",
+        "255/170/204",
+        "221/34/204",
+        "0/34/136",
+        "255/221/68",
+        "0/51/17",
+        "68/102/102"};
   }
 
   /**
@@ -490,13 +999,17 @@ namespace TsunamiPlot
     }
 
     // Get the wave data from the time series
-    float hFirstWave = 0.001f;      // Minimum height to consider a first wave in meters (1 centimeter)
-    float deltaFirstWave = 1.0f; // Minimum time (minutes) to consider a first wave
+    float hFirstWave = 0.01f;    // Minimum height to consider a first wave in meters (1 centimeter)
+    float deltaFirstWave = 1.0f * timeResFactor; // Minimum time (minutes) to consider a first wave
 
-    // If event type is near, adjust parameters
-    if (eventType == "near") {
-      hFirstWave = 0.01f;      // Minimum height to consider a first wave in meters (10 centimeters)
-      deltaFirstWave = 10.0f; // Minimum time (minutes) to consider a first wave
+    if (options.contains("h_first_wave"))
+    {
+      hFirstWave = options.getFloat("h_first_wave");
+    }
+
+    if (options.contains("delta_first_wave"))
+    {
+      deltaFirstWave = options.getFloat("delta_first_wave") * timeResFactor;
     }
 
     WaveData waveData(pointData, hFirstWave, deltaFirstWave);
@@ -561,10 +1074,10 @@ namespace TsunamiPlot
     scriptOfs << "gmt set GMT_LANGUAGE " << langUpper << std::endl;
 
     // set PS_LINE_CAP to ROUND
-    scriptOfs << "gmt set PS_LINE_CAP ROUND" << std::endl;
+    scriptOfs << "gmt set PS_LINE_CAP round" << std::endl;
 
     // set PS_LINE_JOIN to ROUND
-    scriptOfs << "gmt set PS_LINE_JOIN ROUND" << std::endl;
+    scriptOfs << "gmt set PS_LINE_JOIN round" << std::endl;
 
     // plot the legend file
     scriptOfs << "gmt legend " << legendFile << " -Rd -JX12c/9c -DjLT+w10c --FONT_ANNOT_PRIMARY=8p,Helvetica --FONT_TITLE=8p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
@@ -579,7 +1092,7 @@ namespace TsunamiPlot
     scriptOfs << "gmt grdimage -JM10c  -R" << extentStr << " \"" << zMaxPlotPath.string() << "\" -C\"" << palettePath.string() << "\" -Qwhite -Vq" << std::endl;
 
     // Draw map frame and title
-    scriptOfs << "gmt basemap -JM10c -R" << extentStr << " -Baf -B+t\"" << title << "\" --FONT_TITLE=14p,Helvetica --FONT_ANNOT=6p,Helvetica -Vq" << std::endl;
+    scriptOfs << "gmt basemap -JM10c -R" << extentStr << " -Baf -BWSen+t\"" << title << "\" --FONT_TITLE=14p,Helvetica --FONT_ANNOT=6p,Helvetica -Vq" << std::endl;
 
     // Calculate grid length in meters
     double gridLengthX = columns * dxM;
@@ -666,7 +1179,7 @@ namespace TsunamiPlot
     }
 
     // Draw color bar
-    scriptOfs << "gmt colorbar  -JM10c -R" << extentStr << " -DjMR+w6c/0.5c+o-3c/0c+v -C\"" << palettePath.string() << "\" -Bafg -Baf+l\"" << heightStr << "\" -Bxa1f1 -B+u\" m.\" --FONT_ANNOT_PRIMARY=6p --FONT_LABEL=8p -Vq" << std::endl;
+    scriptOfs << "gmt colorbar  -JM10c -R" << extentStr << " -DJMR+w6c/0.25c+o20p/0p+v -C\"" << palettePath.string() << "\" -Bafg -Baf+l\"" << heightStr << "\" -Bxa1f1 -B+u\" m.\" --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
 
     // Attempt to load gauges
     Gauges gauges;
@@ -758,7 +1271,6 @@ namespace TsunamiPlot
       legendOfs << "L - L " << Strings::replaceAll(gauges.name[i], "_", " ") << endl;
       // Plot t_first_wave and h_first_wave in any case
 
-
       // If t_first_wave or t_max_wave are both greater than zero, show the values, otherwise show dashes.
       if (t_first_wave > 0.0f || t_max_wave > 0.0f)
       {
@@ -788,17 +1300,16 @@ namespace TsunamiPlot
       // cout << markFile << endl;
 
       // Line to plot the gauge mark
-      // If event type is near, use bigger circles
-      if (eventType == "near")
+      string gaugeSize = options.get("gauge_size");
+
+      // Set gauge size to 20 by default
+      if (gaugeSize.empty())
       {
-        // Plot bigger circles
-        scriptOfs << "gmt plot \"" << markFile.string() << "\" -Sc4p -W0.2p,black -G" << color << " -Vq" << std::endl;
+        gaugeSize = "2p";
       }
-      else
-      {
-        // Plot smaller circles
-        scriptOfs << "gmt plot \"" << markFile.string() << "\" -Sc0.8p -W0.1p,black -G" << color << " -Vq" << std::endl;
-      }
+
+      // Plot  circles with gauge size
+      scriptOfs << "gmt plot \"" << markFile.string() << "\" -Sc" << gaugeSize << " -W0.2p,black -G" << color << " -Vq" << std::endl;
 
 #ifdef WIN32
       // Save the mark file to be removed later
@@ -1040,15 +1551,18 @@ namespace TsunamiPlot
 
     int seriesCount = pointData.series_count();
 
-
     // Get the wave data from the time series
-    float hFirstWave = 0.001f;      // Minimum height to consider a first wave in meters (1 centimeter)
-    float deltaFirstWave = 1.0f; // Minimum time (minutes) to consider a first wave
+    float hFirstWave = 0.01f;    // Minimum height to consider a first wave in meters (1 centimeter)
+    float deltaFirstWave = 1.0f * timeResFactor; // Minimum time (minutes) to consider a first wave
 
-    // If event type is near, adjust parameters
-    if (eventType == "near") {
-      hFirstWave = 0.01f;      // Minimum height to consider a first wave in meters (10 centimeters)
-      deltaFirstWave = 10.0f; // Minimum time (minutes) to consider a first wave
+    if (options.contains("h_first_wave"))
+    {
+      hFirstWave = options.getFloat("h_first_wave");
+    }
+
+    if (options.contains("delta_first_wave"))
+    {
+      deltaFirstWave = options.getFloat("delta_first_wave") * timeResFactor;
     }
 
     WaveData waveData(pointData, hFirstWave, deltaFirstWave);
@@ -1250,7 +1764,8 @@ namespace TsunamiPlot
             break;
           }
 
-          string color = linePalette[s % linePalette.size()];
+          // string color = linePalette[s % linePalette.size()];
+          string color = linePalette[seriesIndex % linePalette.size()];
 
           // Line to plot the wave data series for the current seriesIndex
           scriptOfs << "gmt plot " << plotExtent << " \"" << waveDataPath << "\" "
@@ -1265,7 +1780,7 @@ namespace TsunamiPlot
 
           // Add legend with line name from seriesIndex
           // Use line symbol instead with color
-          tileLegendSs << "S R - 0.5c " << color << " " << color << " 0.5p" << endl;
+          tileLegendSs << "S R - 10p 1p," << color << " 1p," << color << endl;
 
           // Add gauge name, take max. 18 chars
           string gaugeName = Strings::replaceAll(gauges.name[seriesIndex], "_", " ");

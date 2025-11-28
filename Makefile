@@ -29,3 +29,8 @@ dev-unix:
 
 purge:
 	rm -rf build
+
+install-win:
+	cd build;cmake --build . --config Release
+	cp build/Release/tsunamiplot.exe C:/Apps
+
