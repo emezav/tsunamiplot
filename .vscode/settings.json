@@ -155,6 +155,11 @@
         "singleInstance": true,
         "command": "cd build && cmake --build . --config Release",
       },
+      {
+        "name": "Install (win)",
+        "singleInstance": true,
+        "command": "make install-win",
+      },
     ],
     "defaultColor": "white",
     "reloadButton": "$(extensions-refresh)",
