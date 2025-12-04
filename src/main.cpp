@@ -103,6 +103,8 @@ void usage(char * program) {
   cout << "  source=<text>            Source description to include in the plot title" << endl;
   cout << "  time_res=m|h             Set time resolution for wave data to minutes or hours" << endl;
   cout << "  event_type=near|far      Set plot mode to nearshore or farshore (default: near)" << endl;
+  cout << "  outline=<path>           Path to outline file to plot over grids instead of GMT coastlines" << endl;
+
   cout << endl;
   cout << "Options for bathymetry:" << endl;
   cout << "  plot_invbat=<true|false> Invert bathymetry for plotting (default: false)" << endl;
@@ -127,13 +129,15 @@ void usage(char * program) {
   cout << "                         zmax=<path to zmax grid>" << endl;
   cout << "                         wave_data=<path to wave data>" << endl;
   cout << "                         gauge=<path to gauge file>" << endl;
+  cout << "                         wave_filename=<filename_prefix> (default to wave)" << endl;
+  cout << "                         series_per_plot=n Number of series per plot (default: 4)" << endl;
   cout << endl;
   cout << "Note on text grids: " << endl;
   cout << "  For text grids, the following options must be used to specify the format:" << endl;
   cout << "    format=<lrf|frf>  Format of the text grid (default: lrf)" << endl;
   cout << "       lrf: Last row of the grid is the first record on the file" << endl;
   cout << "       frf: First row of the grid is the first record on the file" << endl;
-  cout << "    dim=<xllcorner yllcorner ncols nrows>  Grid dimensions for text grids" << endl;
+  cout << "    dim=<xllcorner yllcorner nrows ncols>  Grid dimensions for text grids" << endl;
   cout << "Grid resolution can be specified using one of the following:" << endl;
   cout << "  ds=<cellsize>          Cell size for text grids (minutes) for square cells (dx = dy)" << endl;
   cout << "  dx=<cellsize_x>        Cell size in x direction for text grids (decimal degrees)" << endl;

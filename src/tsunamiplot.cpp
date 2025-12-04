@@ -999,7 +999,7 @@ namespace TsunamiPlot
     }
 
     // Get the wave data from the time series
-    float hFirstWave = 0.01f;    // Minimum height to consider a first wave in meters (1 centimeter)
+    float hFirstWave = 0.01f;                    // Minimum height to consider a first wave in meters (1 centimeter)
     float deltaFirstWave = 1.0f * timeResFactor; // Minimum time (minutes) to consider a first wave
 
     if (options.contains("h_first_wave"))
@@ -1552,7 +1552,7 @@ namespace TsunamiPlot
     int seriesCount = pointData.series_count();
 
     // Get the wave data from the time series
-    float hFirstWave = 0.01f;    // Minimum height to consider a first wave in meters (1 centimeter)
+    float hFirstWave = 0.01f;                    // Minimum height to consider a first wave in meters (1 centimeter)
     float deltaFirstWave = 1.0f * timeResFactor; // Minimum time (minutes) to consider a first wave
 
     if (options.contains("h_first_wave"))
@@ -1710,9 +1710,20 @@ namespace TsunamiPlot
       int numberOfTiles = endTile - startTile;
       // cout << "Number of tiles on this image: " << numberOfTiles << endl;
 
+      string imageFilename = options.get("wave_filename");
+      if (!imageFilename.length())
+      {
+        imageFilename = "wave";
+      }
+
+      if (imageCount > 1)
+      {
+        imageFilename += "_" + std::to_string(imageNumber);
+      }
+
       // Start GMT session for this image
       // Save as wave_{imageNumber}.png relative to waveImagePath
-      scriptOfs << "gmt begin " << (waveImagePath / ("wave_" + std::to_string(imageNumber))).string() << " png E600" << std::endl;
+      scriptOfs << "gmt begin " << (waveImagePath / imageFilename).string() << " png E600" << std::endl;
 
       // set PS_LINE_CAP to ROUND
       scriptOfs << "gmt set PS_LINE_CAP ROUND" << std::endl;
@@ -1720,7 +1731,7 @@ namespace TsunamiPlot
       // set PS_LINE_JOIN to ROUND
       scriptOfs << "gmt set PS_LINE_JOIN ROUND" << std::endl;
 
-      cout << (waveImagePath / ("wave_" + std::to_string(imageNumber))).string() << ".png" << endl;
+      cout << (waveImagePath / imageFilename).string() << ".png" << endl;
 
       int currentTile = startTile;
       int seriesPlotted = 0;
