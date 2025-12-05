@@ -45,7 +45,7 @@ int main(int argc, char * argv[]) {
   // cmdLine="type=plot-deform;deform=D:\\Projects\\Tsunami\\Deform\\Gebco_pacific_30sec\\deform_kamchatka_np2_allpacific_30sec.bil;grid=D:\\Projects\\Tsunami\\Grids\\Gebco_pacific_30sec\\allpacific_30sec.bil;source=Kamchatka 2025 NP2;";
   // cmdLine="type=plot-deform;deform=D:\\Projects\\Tsunami\\Deform\\Gebco_pacific_5min\\deform_kmck_v0_allpacific_5min.bil;grid=D:\\Projects\\Tsunami\\Grids\\Gebco_pacific_5min\\allpacific_5min.bil;source=Kamchatka 2025";
   // cmdLine ="type=plot-deform;plot_invbat=true;deform=D:\\Erwin\\Proyectos\\Tsunami\\2024\\D5\\Deform\\result_v1_ver.bil;grid=D:\\Erwin\\Proyectos\\Tsunami\\2024\\D5\\Grids\\grid1.bil";
-  // cmdLine="type=plot-deform;plot_invbat=true;deform=D:\\Caro\\Doctorado\\Simulaciones_Tunami\\Simulaciones_Tumaco\\mareal_100_Worse_Slip_Deficit\\Deform\\def_v1_ver.dat;grid=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\Grids\\grid1.txt;dxm=819;dym=810;dim=-81.81016541 -1.003877997 700 667;format=lrf";
+  // cmdLine="type=plot-deform;plot_invbat=true;deform=D:\\Caro\\Doctorado\\Simulaciones_Tunami\\Simulaciones_Tumaco\\mareal_100_Worse_Slip_Deficit\\Deform\\def_v1_ver.dat;grid=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\Grids\\grid1.txt;dxm=810;dym=810;dim=-81.81016541 -1.003877997 700 667;format=lrf";
   // cmdLine="type=plot-deform;deform=C:\\Users\\er_mv\\Desktop\\ATLANTICO\\Deform\\Central_MARidge_Atlantico_1min.bil;grid=C:\\Users\\er_mv\\Desktop\\ATLANTICO\\Grids\\Atlantico.bil";
   // cmdLine="type=plot-deform;deform=D:\\Projects\\Tsunami\\Batch\\CasoCDNP_02\\Deform_CasoCDNP_02.bil;grid=D:\\Projects\\Tsunami\\Grids\\Gebco_caribbean_30sec\\Gebco_caribbean_30sec.bil;source=CDNP 02";
 
@@ -62,6 +62,9 @@ int main(int argc, char * argv[]) {
   // cmdLine="type=plot-wave;wave_data=D:\\Projects\\Tsunami\\Result\\case_1906_slip_deficit_1min\\point.dat;gauge=D:\\Projects\\Tsunami\\Grids\\Gebco_pacific_1min\\outpoint.txt;zmax=D:\\Projects\\Tsunami\\Result\\case_1906_slip_deficit_1min\\zmax.bil;lang=en;source=1906 Ecuador";
   // cmdLine="type=plot-wave;wave_data=C:\\Users\\er_mv\\Desktop\\ATLANTICO\\Result\\Central_MARidge_Atlantico_1min\\point_1.dat;gauge=C:\\Users\\er_mv\\Desktop\\ATLANTICO\\Grids\\outpoint.txt;zmax=C:\\Users\\er_mv\\Desktop\\ATLANTICO\\Result\\Central_MARidge_Atlantico_1min\\zmax.bil;lang=es;time_res=h;source=1906 Ecuador";
   // cmdLine="type=plot-wave;wave_data=D:\\Erwin\\Proyectos\\Tsunami\\2024\\D5\\Result\\point1.txt;gauge=D:\\Erwin\\Proyectos\\Tsunami\\2024\\D5\\Grids\\outpoint1.txt;zmax=D:\\Erwin\\Proyectos\\Tsunami\\2024\\D5\\result\\max1.txt;format=lrf;lang=es;time_res=h;source=2024 D5;invbat=true;dim=-81.8101618 -1.0038784 1324 874;dxm=810;dym=810";
+
+  // Plot inundation examples
+  // cmdLine="type=plot-inund;plot_invbat=true;format=lrf;inund_nodata=0;dim=-78.80030694 1.801964064 640 872;dxm=10;dym=10;inund=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\RESULT\\inund.txt;grid=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\Grids\\grid5_mareal100.txt;outline=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\Grids\\outline.bf2";
 
   geo::Options options(cmdLine, '=', "\r\n;");
 
@@ -82,6 +85,8 @@ int main(int argc, char * argv[]) {
     plotZMax(options);
   } else if (plotType == "plot-wave") {
     plotWaveProfile(options);
+  } else if (plotType == "plot-inund") {
+    plotInundation(options);
   } else {
     usage(argv[0]);
     return 1;
@@ -124,6 +129,7 @@ void usage(char * program) {
   cout << "                         grid=<path to bathymetry>" << endl;
   cout << "                         wave_data=<path to wave data>" << endl;
   cout << "                         gauge=<path to gauge file>" << endl;
+  cout << "                         zmax_nodata=<value> sets the specified value to Nodata (100) in the zmax grid" << endl;
   cout << endl;
   cout << "  plot-wave <options>    Plot wave profile at gauges" << endl;
   cout << "                         zmax=<path to zmax grid>" << endl;
@@ -131,6 +137,11 @@ void usage(char * program) {
   cout << "                         gauge=<path to gauge file>" << endl;
   cout << "                         wave_filename=<filename_prefix> (default to wave)" << endl;
   cout << "                         series_per_plot=n Number of series per plot (default: 4)" << endl;
+  cout << endl;
+  cout << "  plot-inund  <options>  Plot inundation grid" << endl;
+  cout << "                         inund=<path to inundation grid>" << endl;
+  cout << "                         grid=<path to bathymetry>" << endl;
+  cout << "                         inund_nodata=<value> sets the specified value to Nodata (100) in the inundation grid" << endl;
   cout << endl;
   cout << "Note on text grids: " << endl;
   cout << "  For text grids, the following options must be used to specify the format:" << endl;

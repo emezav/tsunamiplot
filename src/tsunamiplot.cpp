@@ -55,38 +55,6 @@ namespace TsunamiPlot
    */
   vector<string> getPointPalette()
   {
-    // return {
-    //     "104/138/232",
-    //     "195/61/105",
-    //     "46/165/151",
-    //     "132/86/206",
-    //     "224/121/65",
-    //     "55/89/206",
-    //     "150/34/73",
-    //     "9/111/100",
-    //     "98/55/167",
-    //     "168/68/1",
-    //     "39/62/165",
-    //     "120/13/53",
-    //     "3/82/74",
-    //     "74/35/139",
-    //     "126/49/3",
-    //     "27/43/136"
-    //   };
-    //  return {
-    //     "191/225/244",
-    //     "153/219/199",
-    //     "250/238/207",
-    //     "238/207/223",
-    //     "153/153/153",
-    //     "230/159/0",
-    //     "86/180/233",
-    //     "0/158/115",
-    //     "240/228/66",
-    //     "0/114/178",
-    //     "213/94/0",
-    //     "204/121/167",
-    //     "0/0/0"};
     return {
         "0/102/0",
         "0/0/102",
@@ -346,256 +314,8 @@ namespace TsunamiPlot
   vector<string> getLinePalette()
   {
 
-    return {
-        "0/102/0",
-        "0/0/102",
-        "170/85/68",
-        "0/136/204",
-        "255/17/255",
-        "255/0/119",
-        "136/255/153",
-        "136/102/255",
-        "85/136/119",
-        "102/0/68",
-        "221/255/0",
-        "255/136/0",
-        "119/102/0",
-        "187/0/153",
-        "153/119/153",
-        "136/170/0",
-        "34/51/102",
-        "34/51/0",
-        "170/187/119",
-        "0/187/34",
-        "255/85/85",
-        "255/170/119",
-        "68/17/0",
-        "255/153/170",
-        "0/187/136",
-        "153/153/255",
-        "136/221/255",
-        "0/17/187",
-        "153/0/0",
-        "119/68/153",
-        "187/255/221",
-        "187/153/136",
-        "170/17/68",
-        "85/68/68",
-        "153/17/238",
-        "221/255/119",
-        "170/85/0",
-        "0/85/102",
-        "221/204/255",
-        "153/255/68",
-        "0/68/187",
-        "187/85/136",
-        "221/102/238",
-        "255/221/0",
-        "119/0/153",
-        "255/221/170",
-        "0/255/119",
-        "204/153/0",
-        "85/170/68",
-        "51/187/187",
-        "34/0/34",
-        "153/170/187",
-        "0/255/204",
-        "238/255/170",
-        "255/0/204",
-        "221/68/17",
-        "119/85/51",
-        "255/85/170",
-        "187/153/85",
-        "0/85/170",
-        "0/85/51",
-        "255/102/136",
-        "102/119/68",
-        "136/68/85",
-        "0/153/187",
-        "187/0/204",
-        "68/0/85",
-        "136/187/255",
-        "119/119/187",
-        "136/221/85",
-        "0/136/255",
-        "170/0/102",
-        "102/0/34",
-        "187/119/221",
-        "238/119/68",
-        "0/204/102",
-        "187/204/187",
-        "238/187/204",
-        "51/136/85",
-        "136/221/153",
-        "85/119/153",
-        "102/136/34",
-        "85/51/85",
-        "119/51/0",
-        "119",
-        "85/68/255",
-        "119/187/153",
-        "0/34/17",
-        "68/85/0",
-        "170/221/34",
-        "221/153/204",
-        "136/17/119",
-        "204/204/34",
-        "0/0/68",
-        "170/221/119",
-        "204/136/51",
-        "255/136/119",
-        "255/187/170",
-        "170/170/68",
-        "255/0/85",
-        "0/68/221",
-        "0/34/51",
-        "51/34/0",
-        "187/85/255",
-        "136/238/238",
-        "255/0/51",
-        "0/68/0",
-        "51/17/153",
-        "238/102/204",
-        "170/102/170",
-        "187/119/119",
-        "119/68/187",
-        "68/17/34",
-        "119/17/17",
-        "255/170/0",
-        "68/85/68",
-        "102/102/204",
-        "255/17/170",
-        "51/221/17",
-        "255/187/85",
-        "255/255/221",
-        "119/34/204",
-        "85/170/0",
-        "51/51/136",
-        "85/68/0",
-        "221/170/255",
-        "0/255/170",
-        "0/136/0",
-        "153/102/34",
-        "204/0/51",
-        "255/255/85",
-        "204/238/255",
-        "187/85/102",
-        "0/187/255",
-        "0/85/136",
-        "204/136/102",
-        "255/136/187",
-        "85/119/255",
-        "102/238/204",
-        "68/0/221",
-        "221/204/119",
-        "255/85/255",
-        "170/68/187",
-        "255/153/68",
-        "221/51/119",
-        "255/102/0",
-        "136/153/119",
-        "187/68/153",
-        "153/136/0",
-        "0/17/51",
-        "119/85/136",
-        "187/68/51",
-        "0/221/255",
-        "153/153/204",
-        "187/119/255",
-        "102/238/85",
-        "102/204/0",
-        "85/34/136",
-        "0/153/136",
-        "187/221/170",
-        "102/153/238",
-        "119/255/0",
-        "85/85/119",
-        "136/0/68",
-        "238/187/0",
-        "51/34/51",
-        "68/17/68",
-        "136/119/68",
-        "119/170/102",
-        "204/187/187",
-        "136/187/187",
-        "255/85/221",
-        "204/170/68",
-        "187/255/170",
-        "0/119/119",
-        "221/136/0",
-        "119/51/34",
-        "238/187/119",
-        "204/0/17",
-        "119/85/102",
-        "187/153/170",
-        "204/187/153",
-        "255/255/136",
-        "0/136/51",
-        "221/102/17",
-        "136/187/68",
-        "187/170/17",
-        "204/119/68",
-        "119/51/102",
-        "187/204/238",
-        "153/51/0",
-        "17/221/153",
-        "17/51/51",
-        "204/68/85",
-        "34/0/0",
-        "238/51/102",
-        "153/0/34",
-        "204/0/136",
-        "187/204/85",
-        "51/68/85",
-        "68/68/34",
-        "204/51/255",
-        "221/255/238",
-        "187/255/102",
-        "102/51/51",
-        "51/85/34",
-        "102/153/204",
-        "0/255/85",
-        "68/119/51",
-        "153/119/119",
-        "221/119/119",
-        "136/136/51",
-        "221/119/187",
-        "170/136/204",
-        "68/170/102",
-        "238/0/136",
-        "85/68/136",
-        "119/255/187",
-        "85/204/119",
-        "170/102/136",
-        "255/136/255",
-        "17/68/51",
-        "119/0/255",
-        "yellow",
-        "17/119/204",
-        "170/0/170",
-        "255/102/68",
-        "187/255/34",
-        "85/85/221",
-        "187/255/136",
-        "170/136/255",
-        "0/170/51",
-        "153/102/85",
-        "119/102/85",
-        "221/255/85",
-        "85/51/17",
-        "102/153/170",
-        "0/51/85",
-        "51/119/136",
-        "0/34/102",
-        "0/204/187",
-        "85/238/119",
-        "34/170/255",
-        "255/170/204",
-        "221/34/204",
-        "0/34/136",
-        "255/221/68",
-        "0/51/17",
-        "68/102/102"};
+    // Return the same palette as lines and points must match
+    return getPointPalette();
   }
 
   /**
@@ -609,6 +329,39 @@ namespace TsunamiPlot
     std::ofstream ofs(palettePath.string());
 
     ofs << "# Max CPT file 0-7m\n"
+           "# z-value  R  G  B    z-value   R  G  B\n"
+           "0	0/0/127	0.1	0/0/241	L\n"
+           "0.1	0/0/241	0.2	99/255/100	L\n"
+           "0.2	99/255/100	0.3	0/212/255	L\n"
+           "0.3	0/212/255	0.4	255/255/219	L\n"
+           "0.4	255/255/219	0.6	255/255/163	L\n"
+           "0.6	255/255/163	1.0	255/213/0	L\n"
+           "1.0	255/213/0	2.0	255/9/0	L\n"
+           "2.0	255/9/0	5.0	241/0/0	L\n"
+           "5.0	241/0/0	7.0	127/0/0	B\n"
+           "# Background color\n"
+           "B	0/0/127\n"
+           "# Foreground color\n"
+           "F	255/255/255\n"
+           "# NaN color\n"
+           "N 255/255/255\n";
+
+    ofs.close();
+
+    return palettePath;
+  }
+
+  /**
+   * @brief Create a Inundation Palette File object
+   * @return fs::path Path to the created palette file
+   */
+  fs::path createInundationPaletteFile()
+  {
+    fs::path palettePath = std::filesystem::temp_directory_path() / "inundation.cpt";
+
+    std::ofstream ofs(palettePath.string());
+
+   ofs << "# Inundation CPT file 0-7m\n"
            "# z-value  R  G  B    z-value   R  G  B\n"
            "0	0/0/127	0.1	0/0/241	L\n"
            "0.1	0/0/241	0.2	99/255/100	L\n"
@@ -932,7 +685,7 @@ namespace TsunamiPlot
 
       grid.setNoData(100.0f);
 
-      cout << "Replacing NoData in zmax grid with " << noDataValue << endl;
+      cout << "Replacing " << noDataValue << " with nodata" << endl;
       // Save temporary grid to a new file
       fs::path tempZMaxGridPath = fs::temp_directory_path() / (zMaxGridPath.stem().string() + "_nodata_fixed.bil");
       if (geo::SaveGrid(grid, tempZMaxGridPath.string(), GridFormat::ESRI_FLOAT) == geo::geoStatus::FAILURE)
@@ -1871,6 +1624,343 @@ namespace TsunamiPlot
   }
 
   /**
+   * @brief Create an Inundation Plot Script object
+   * @param inundPath Inundation grid path
+   * @param gridPath Grid path
+   * @param options Geo options
+   * @return fs::path
+   */
+  fs::path createInundationPlotScript(string inundPath, string gridPath, geo::Options &options)
+  {
+
+    fs::path palettePath = createInundationPaletteFile();
+
+    string lang = Strings::tolower(options.get("lang"));
+    if (!lang.length())
+    {
+      lang = "es";
+    }
+
+    string langUpper = Strings::toupper(static_cast<string>(lang));
+
+    string title = "Areas inundadas";
+
+    if (lang == "en")
+    {
+      title = "Inundation Areas";
+    }
+
+    if (options.contains("source"))
+    {
+      title += " - " + options.get("source");
+    }
+
+    // Load zMax grid to get parameters
+    Grid grid;
+    fs::path inundGridPath(inundPath);
+    fs::path inundPlotPath = inundGridPath;
+
+    // Load grid and convert to Esri format
+    if (loadGrid(grid, inundGridPath, options, true) == false)
+    {
+      cerr << "Unable to load grid from " << inundGridPath.string() << endl;
+      return fs::path();
+    }
+
+    // Get grid parameters
+    auto [x0, y0, xMax, yMax] = grid.extents();
+    auto [dxDeg, dyDeg] = grid.resolutionDegrees();
+    auto [dxM, dyM] = grid.resolutionMeters();
+    auto [rows, columns] = grid.dimensions();
+
+    bool tempInundGridCreated = false;
+    // if inund_nodata option is set, create a temporary grid and  replace nodata values
+    if (!options.get("inund_nodata").empty())
+    {
+      float noDataValue = std::stof(options.get("inund_nodata"));
+
+      for (size_t i = 0; i < rows; i++)
+      {
+        for (size_t j = 0; j < columns; j++)
+        {
+          if (grid(i, j) == noDataValue || grid(i,j) <= 0.0f)
+          {
+            grid(i, j) = 100.0f; // Replace NoData with 100.0f
+          }
+        }
+      }
+
+      grid.setNoData(100.0f);
+
+      cout << "Replacing " << noDataValue << " with nodata" << endl;
+      // Save temporary grid to a new file
+      fs::path tempInundGridPath = fs::temp_directory_path() / (inundGridPath.stem().string() + "_nodata_fixed.bil");
+      if (geo::SaveGrid(grid, tempInundGridPath.string(), GridFormat::ESRI_FLOAT) == geo::geoStatus::FAILURE)
+      {
+        cerr << "Unable to save temporary grid to " << tempInundGridPath.string() << endl;
+        return fs::path();
+      }
+      inundPlotPath = tempInundGridPath;
+      tempInundGridCreated = true;
+    }
+
+#ifdef _DEBUG
+    cout << "Creating inundation plot script for " << inundGridPath.string() << endl;
+#endif
+
+    // Set output path to gridPath with .png extension
+    fs::path outputPath = inundGridPath.replace_extension(".png");
+
+    // Set file extension
+    string fileExt = ".bat";
+#ifdef __linux__
+    fileExt = ".sh";
+#endif
+
+    // Use filename from gridPath to create a .bat file inside fs::temp_directory_path()
+    fs::path scriptPath = fs::temp_directory_path() / (fs::path(inundPlotPath).stem().string() + fileExt);
+
+    // Generate legend from gauges
+    fs::path legendFile = fs::temp_directory_path() / "inund_legend.txt";
+
+    // Create batch file
+    std::ofstream scriptOfs(scriptPath.string());
+
+    fs::path bathymetryPalettePath = fs::temp_directory_path() / "bathymetry_palette.cpt";
+
+    // Send the commands to the batch file
+
+#ifdef WIN32
+    scriptOfs << "@echo off" << std::endl;
+    scriptOfs << ":: Auto-generated batch file to plot inundation grid " << inundPlotPath << std::endl;
+    // Set GMT_VERBOSE=quiet
+    scriptOfs << "set \"GMT_VERBOSE=quiet\"" << std::endl;
+    // Set GMT_END_SHOW=off
+    scriptOfs << "set \"GMT_END_SHOW=off\"" << std::endl;
+    // Set GMT_LANGUAGE
+    scriptOfs << "set \"GMT_LANGUAGE=" << langUpper << "\"" << std::endl;
+#elif __linux__
+    // Set GMT_VERBOSE=quiet
+    scriptOfs << "export GMT_VERBOSE=quiet" << std::endl;
+    // Set GMT_END_SHOW=off
+    scriptOfs << "export GMT_END_SHOW=off" << std::endl;
+    // Set GMT language
+    scriptOfs << "export GMT_LANGUAGE=" << langUpper << std::endl;
+#endif
+
+    // Create a CPT file for bathymetry using the globe base palette
+    // Bathymetry grid must be positive for land and negative for sea, so only invert the palette if requested
+    if (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1")
+    {
+      // Invert the globe palette for bathymetry
+      scriptOfs << "gmt makecpt -Cglobe -I -D > \"" << bathymetryPalettePath.string() << "\" " << std::endl;
+    }
+    else
+    {
+      scriptOfs << "gmt makecpt -Cglobe -D > \"" << bathymetryPalettePath.string() << "\" " << std::endl;
+    }
+
+    // Create extent string
+    string extentStr = std::to_string(x0) + "/" + std::to_string(xMax) + "/" + std::to_string(y0) + "/" + std::to_string(yMax);
+
+    // Start GMT modern session
+    scriptOfs << "gmt begin \"" << inundGridPath.replace_extension("").string() << "\" png E600" << std::endl;
+
+    // If show_extent option is set to true, output the extent.
+    if (Strings::tolower(options.get("show_extent")) == "true" || options.get("show_extent") == "1")
+    {
+      cout << "Plot extent: " << extentStr << endl;
+    }
+
+    // Set GMT option MAP_FRAME_TYPE to fancy+ for this session
+    scriptOfs << "gmt set MAP_FRAME_TYPE fancy+" << std::endl;
+
+    // Set GMT option MAP_FRAME_WIDTH for this session
+    scriptOfs << "gmt set MAP_FRAME_WIDTH 2.5p" << std::endl;
+
+    // Set GMT option GMT_LANGUAGE
+    scriptOfs << "gmt set GMT_LANGUAGE " << langUpper << std::endl;
+
+    // set PS_LINE_CAP to ROUND
+    scriptOfs << "gmt set PS_LINE_CAP round" << std::endl;
+
+    // set PS_LINE_JOIN to ROUND
+    scriptOfs << "gmt set PS_LINE_JOIN round" << std::endl;
+
+    // plot the legend file
+    scriptOfs << "gmt legend " << legendFile << " -Rd -JX12c/9c -DjLT -F --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_TITLE=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
+
+
+    // Plot bathymetry - Offset Y by 12C to leave space for the legend, override -R to match grid. Set transparency to 70 percent
+    scriptOfs << "gmt grdimage -JM10c -R" << extentStr << " \"" << gridPath << "\"  -C\"" << bathymetryPalettePath.string() << "\" -Y11c -Vq" << std::endl;
+
+    // Plot inundation grid
+    scriptOfs << "gmt grdimage -JM10c  -R" << extentStr << " \"" << inundPlotPath.string() << "\" -C\"" << palettePath.string() << "\" -Q -Vq" << std::endl;
+
+    // Draw map frame and title
+    scriptOfs << "gmt basemap -JM10c -R" << extentStr << " -Baf -BWSen+t\"" << title << "\" --FONT_TITLE=14p,Helvetica --FONT_ANNOT=6p,Helvetica -Vq" << std::endl;
+
+    // Calculate grid length in meters
+    double gridLengthX = columns * dxM;
+    double gridLengthY = rows * dyM;
+
+    // Calculate the minimum grid length
+    double gridLengthKm = std::min(gridLengthX, gridLengthY) / 1000.0;
+
+#ifdef _DEBUG
+    cout << "Grid length (km): " << gridLengthKm << endl;
+#endif
+
+    // Determine GMT scale string based on grid length. Scale must be approx, 1/5 of the minimum grid length
+    float scaleLengthKm = trunc(gridLengthKm / 5.0f);
+    if (scaleLengthKm < 1)
+    {
+      scaleLengthKm = 0.1;
+    }
+
+    // Round scaleLengthKm to 0.5, 5, 50, 500, 5000
+    if (scaleLengthKm < 1)
+    {
+      scaleLengthKm = (scaleLengthKm < 0.5f) ? 0.5f : 1.0f;
+    }
+    else if (scaleLengthKm < 10)
+    {
+      scaleLengthKm = round(scaleLengthKm);
+    }
+    else if (scaleLengthKm < 100)
+    {
+      scaleLengthKm = round(scaleLengthKm / 5.0f) * 5.0f;
+    }
+    else if (scaleLengthKm < 1000)
+    {
+      scaleLengthKm = round(scaleLengthKm / 50.0f) * 50.0f;
+    }
+    else
+    {
+      scaleLengthKm = round(scaleLengthKm / 500.0f) * 500.0f;
+    }
+
+#ifdef _DEBUG
+    cout << "Scale length (km): " << scaleLengthKm << endl;
+#endif
+
+    // Draw coast lines
+    // If outline option is set to true, plot outline file instead of coastlines
+    if (options.get("outline").length() > 0)
+    {
+      fs::path outlinePath(options.get("outline"));
+      if (!fs::exists(outlinePath))
+      {
+        cerr << "Warning! outline file " << outlinePath.string() << " does not exist." << endl;
+      }
+      else
+      {
+        // If file is binary plot with -bi2f
+        if (Strings::tolower(outlinePath.extension().string()) == ".bin" || Strings::tolower(outlinePath.extension().string()) == ".bf2")
+        {
+          scriptOfs << "gmt plot \"" << fs::canonical(outlinePath).string() << "\" -bi2f -Wthin,dimgray --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
+        }
+        else
+        {
+          // Plot as text file, add -J and -R to match the grid
+          scriptOfs << "gmt plot -JM10c -R" << extentStr << " \"" << fs::canonical(outlinePath).string() << "\" -Wthinnest,dimgray --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
+        }
+      }
+    }
+    else
+    {
+      // Fall back to coastlines and country borders
+      // -W shorelines, -N1 country borders
+      scriptOfs << "gmt coast -JM10c -R" << extentStr << " -Df -N1/0.01p,gray77 -Wthinnest,dimgray  --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
+    }
+
+    // Draw directional rose and scalebar
+    scriptOfs << "gmt basemap -JM10c -R" << extentStr << " -TdjLT+w30p+f2+l,,,,+o5p/5p -LJBC+c" << y0 << "+l+f+w" << scaleLengthKm << "k+o0p/30p --FONT_TITLE=6p,Helvetica --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
+
+    string heightStr = "Altura (m)";
+    // If lang option is set to "en", change heightStr to "Height (m)"
+    if (lang == "en")
+    {
+      heightStr = "Height (m)";
+    }
+
+    // Draw color bar
+    scriptOfs << "gmt colorbar  -JM10c -R" << extentStr << " -DJMR+w6c/0.25c+o20p/0p+v -C\"" << palettePath.string() << "\" -Bafg -Baf+l\"" << heightStr << "\" -Bxa1f1 -B+u\" m.\" --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
+
+    std::ofstream legendOfs(legendFile.string());
+
+    if (legendOfs.is_open() == false)
+    {
+      cerr << "Unable to create legend file " << legendFile.string() << endl;
+      scriptOfs.close();
+      fs::remove(scriptPath);
+      return fs::path();
+    }
+    // Define 1 column
+    legendOfs << "N 1" << endl;
+    // Define legends for data ranges
+
+    legendOfs << "L - L Altura (m)" << endl;
+    if (lang == "en")
+    {
+      legendOfs << "L - L Height (m)" << endl;
+    }
+    legendOfs << "S 0.25c s 0.25c 255/40/0 thinnest 0.5c 2m - 5m" << endl;
+    legendOfs << "S 0.25c s 0.25c 255/153/0 thinnest 0.5c 1m - 2m" << endl;
+    legendOfs << "S 0.25c s 0.25c 255/230/0 thinnest 0.5c 0.3m - 1m" << endl;
+    legendOfs << "S 0.25c s 0.25c 0/255/0 thinnest 0.5c 0.01m - 0.3m" << endl;
+    legendOfs.close();
+
+    legendOfs.close();
+
+    // End GMT modern session
+    scriptOfs << "gmt end" << std::endl;
+
+#ifndef _DEBUG
+   std::stringstream removeFilesSs;
+#ifdef WIN32
+    if (tempInundGridCreated)
+    {
+      // Remove temporary zmax grid
+      removeFilesSs << "del \"" << inundPlotPath.string() << "\"" << std::endl;
+    }
+    // Remove palette file
+    removeFilesSs << "del \"" << palettePath.string() << "\"" << std::endl;
+    // Remove temporary legend file
+    removeFilesSs << "del \"" << legendFile.string() << "\"" << std::endl;
+#elif __linux__
+    if (tempInundGridCreated)
+    {
+      // Remove temporary zmax grid
+      removeFilesSs << "rm \"" << inundPlotPath.string() << "\"" << std::endl;
+    }
+    // Remove palette file
+    removeFilesSs << "rm \"" << palettePath.string() << "\"" << std::endl;
+    // Remove temporary legend file
+    removeFilesSs << "rm \"" << legendFile.string() << "\"" << std::endl;
+#endif
+
+    // Append remove commands to the batch file
+    scriptOfs << removeFilesSs.str();
+#endif
+
+    // Close the batch file
+    scriptOfs.close();
+
+    // If linux, use fs::permissions to set the script as executable (only for the owner)
+#ifdef __linux__
+    fs::permissions(scriptPath, fs::perms::owner_exec, fs::perm_options::add);
+#endif
+
+// Show script path in debug mode
+#ifdef _DEBUG
+    cout << scriptPath.string() << endl;
+#endif
+
+    return scriptPath;
+  }
+
+  /**
    * @brief Create a Grid Plot Shell Script object
    * @param gridPath Input grid file path
    * @param palettePath Input color palette file path
@@ -2014,7 +2104,7 @@ namespace TsunamiPlot
     auto [inputPath, outputPath] = getPaths(options);
 
     // If output path is relative, set relative to inputPath
-    if (outputPath.is_relative())
+    if (!inputPath.empty() && !outputPath.empty() && outputPath.is_relative())
     {
       outputPath = (inputPath / outputPath).make_preferred();
     }
@@ -2322,4 +2412,121 @@ namespace TsunamiPlot
     return {inputPath, outputPath};
   }
 
+  void plotInundation(geo::Options &options)
+  {
+    using geo::GridFormat;
+
+    fs::path gridPath;
+    fs::path inundationPath;
+
+    auto [inputPath, outputPath] = getPaths(options);
+
+    // If output path is relative, set relative to inputPath
+    if (!inputPath.empty() && !outputPath.empty() && outputPath.is_relative())
+    {
+      outputPath = (inputPath / outputPath).make_preferred();
+    }
+
+    // Check required parameters
+    GridFormat gridOutputFormat{GridFormat::ESRI_FLOAT};
+    if (options.contains("format"))
+    {
+      GridFormat suggestedFormat = geo::getFormat(options.get("format"));
+      if (suggestedFormat == GridFormat::UNKNOWN)
+      {
+        cerr << "Warning! invalid output_format option: " << options.get("format") << ". Using ESRI (.bil) format" << endl;
+      }
+      else
+      {
+        gridOutputFormat = suggestedFormat;
+      }
+    }
+
+    // Get grid path
+    gridPath = fs::path(options.get("grid"));
+    if (!fs::exists(gridPath) && fs::exists(inputPath / gridPath))
+    {
+      gridPath = (inputPath / gridPath).make_preferred();
+    }
+    else if (!fs::exists(gridPath) && fs::exists(outputPath / gridPath))
+    {
+      gridPath = (outputPath / gridPath).make_preferred();
+    }
+
+    if (!fs::exists(gridPath))
+    {
+      cerr << "Grid " << gridPath.string() << " does not exist." << endl;
+      return;
+    }
+
+    // Get cannonical route to grid path
+    gridPath = fs::canonical(gridPath);
+
+    Grid grid;
+    // Attempt to load grid and convert to esri
+    if (loadGrid(grid, gridPath, options, true) == false)
+    {
+      cerr << "Unable to load grid from " << gridPath.string() << endl;
+      return;
+    }
+
+    // Get zMax path
+    inundationPath = fs::path("inund" + geo::gridExtension(gridOutputFormat));
+    if (options.contains("inund"))
+    {
+      inundationPath = options.get("inund");
+    }
+
+    if (!fs::exists(inundationPath) && fs::exists(outputPath / inundationPath))
+    {
+      inundationPath = (outputPath / inundationPath).make_preferred();
+    }
+
+    if (!fs::exists(inundationPath))
+    {
+      cerr << "Inundation grid " << inundationPath.string() << " does not exist." << endl;
+      return;
+    }
+
+    // Convert inundationPath to canonical
+    inundationPath = fs::canonical(inundationPath);
+
+    cout << "Plotting inundation grid " << inundationPath.string() << " ..." << std::endl;
+
+    // Get inundation grid
+    Grid inundationGrid;
+
+    if (loadGrid(inundationGrid, inundationPath, options, true) == false)
+    {
+      cerr << "Unable to load inundation grid from " << inundationPath.string() << endl;
+      return;
+    }
+
+    // Create bat or sh file depending on OS
+    fs::path scriptPath = createInundationPlotScript(inundationPath.string(), gridPath.string(), options);
+
+    // Execute the script to create the plot using executeCommand
+    int exitCode = executeCommand(scriptPath.string(), true);
+
+#ifndef _DEBUG
+    // Remove the script file
+    try
+    {
+      fs::remove(scriptPath);
+    }
+    catch (fs::filesystem_error &e)
+    {
+      cerr << "Error removing temporary script file: " << e.what() << endl;
+    }
+#endif
+
+    if (exitCode != 0)
+    {
+      cerr << "Plot script failed with exit code " << exitCode << endl;
+      return;
+    }
+    cout << "Inundation " << inundationPath.replace_extension("png").string() << std::endl;
+  }
+
 }
+

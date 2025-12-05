@@ -29,6 +29,12 @@ namespace TsunamiPlot
    * @param options Geo options
    */
   void plotWaveProfile(geo::Options &options);
+
+  /**
+   * @brief Plot inundation data
+   * @param options Geo options
+   */
+  void plotInundation(geo::Options &options);
 }
 
 #endif // TSUNAMIPLOT_H
