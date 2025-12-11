@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <string>
+
 #include "geo.h"
 #include "tsunamiplot.h"
 
@@ -51,15 +52,15 @@ int main(int argc, char * argv[]) {
 
   // Plot zmax examples
 
-  // cmdLine="lang=en;type=plot-max;event_type=near;grid=D:\\Projects\\Tsunami\\Grids\\Gebco_caribbean_30sec\\Gebco_caribbean_30sec.bil;zmax=D:\\Projects\\Tsunami\\Batch\\CasoCDNP_02\\zmax.bil;wave_data=D:\\Projects\\Tsunami\\Batch\\CasoCDNP_02\\point.dat;gauge=D:\\Projects\\Tsunami\\Grids\\Gebco_caribbean_30sec\\outpoint_caribbean_30sec.txt";
-  // cmdLine="lang=en;type=plot-max;event_type=far;grid=D:\\Projects\\Tsunami\\Grids\\Gebco_pacific_1min\\allpacific_1min.bil;zmax=D:\\Projects\\Tsunami\\Result\\case_1906_slip_deficit_1min\\zmax.bil;wave_data=D:\\Projects\\Tsunami\\Result\\case_1906_slip_deficit_1min\\point.dat;gauge=D:\\Projects\\Tsunami\\Grids\\Gebco_pacific_1min\\outpoint.txt";
+  // cmdLine="lang=us;type=plot-max;event_type=near;grid=D:\\Projects\\Tsunami\\Grids\\Gebco_caribbean_30sec\\Gebco_caribbean_30sec.bil;zmax=D:\\Projects\\Tsunami\\Batch\\CasoCDNP_02\\zmax.bil;wave_data=D:\\Projects\\Tsunami\\Batch\\CasoCDNP_02\\point.dat;gauge=D:\\Projects\\Tsunami\\Grids\\Gebco_caribbean_30sec\\outpoint_caribbean_30sec.txt";
+  // cmdLine="lang=us;type=plot-max;event_type=far;grid=D:\\Projects\\Tsunami\\Grids\\Gebco_pacific_1min\\allpacific_1min.bil;zmax=D:\\Projects\\Tsunami\\Result\\case_1906_slip_deficit_1min\\zmax.bil;wave_data=D:\\Projects\\Tsunami\\Result\\case_1906_slip_deficit_1min\\point.dat;gauge=D:\\Projects\\Tsunami\\Grids\\Gebco_pacific_1min\\outpoint.txt";
 
   // cmdLine="type=plot-max;event_type=near;plot_invbat=true;format=lrf;zmax_nodata=0;dim=-81.81016541 -1.003877997 700 667;dxm=810;dym=810;zmax=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\RESULT\\max1.txt;grid=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\Grids\\grid1.txt;wave_data=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\Result\\point1.txt;gauge=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\Grids\\outpoint1.txt";
   // cmdLine="type=plot-max;event_type=near;plot_invbat=true;zmax_nodata=0;zmax=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\RESULT\\max1.bil;grid=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\Grids\\grid1.bil;wave_data=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\Result\\point1.txt;gauge=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\Grids\\outpoint1.txt;outline=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\Grids\\outline.bf2";
 
   // Plot wave examples
-  // cmdLine="lang=en;type=plot-wave;event_type=far;dim=-81.81016541 -1.003877997 700 667;dxm=810;dym=810;zmax=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\RESULT\\max1.txt;wave_data=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\Result\\point1.txt;gauge=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\Grids\\outpoint1.txt;source=Max1";
-  // cmdLine="type=plot-wave;wave_data=D:\\Projects\\Tsunami\\Result\\case_1906_slip_deficit_1min\\point.dat;gauge=D:\\Projects\\Tsunami\\Grids\\Gebco_pacific_1min\\outpoint.txt;zmax=D:\\Projects\\Tsunami\\Result\\case_1906_slip_deficit_1min\\zmax.bil;lang=en;source=1906 Ecuador";
+  // cmdLine="lang=us;type=plot-wave;event_type=far;dim=-81.81016541 -1.003877997 700 667;dxm=810;dym=810;zmax=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\RESULT\\max1.txt;wave_data=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\Result\\point1.txt;gauge=C:\\Users\\er_mv\\Desktop\\mareal_100_Worse_Slip_Deficit\\Grids\\outpoint1.txt;source=Max1";
+  // cmdLine="type=plot-wave;wave_data=D:\\Projects\\Tsunami\\Result\\case_1906_slip_deficit_1min\\point.dat;gauge=D:\\Projects\\Tsunami\\Grids\\Gebco_pacific_1min\\outpoint.txt;zmax=D:\\Projects\\Tsunami\\Result\\case_1906_slip_deficit_1min\\zmax.bil;lang=us;source=1906 Ecuador";
   // cmdLine="type=plot-wave;wave_data=C:\\Users\\er_mv\\Desktop\\ATLANTICO\\Result\\Central_MARidge_Atlantico_1min\\point_1.dat;gauge=C:\\Users\\er_mv\\Desktop\\ATLANTICO\\Grids\\outpoint.txt;zmax=C:\\Users\\er_mv\\Desktop\\ATLANTICO\\Result\\Central_MARidge_Atlantico_1min\\zmax.bil;lang=es;time_res=h;source=1906 Ecuador";
   // cmdLine="type=plot-wave;wave_data=D:\\Erwin\\Proyectos\\Tsunami\\2024\\D5\\Result\\point1.txt;gauge=D:\\Erwin\\Proyectos\\Tsunami\\2024\\D5\\Grids\\outpoint1.txt;zmax=D:\\Erwin\\Proyectos\\Tsunami\\2024\\D5\\result\\max1.txt;format=lrf;lang=es;time_res=h;source=2024 D5;invbat=true;dim=-81.8101618 -1.0038784 1324 874;dxm=810;dym=810";
 
@@ -104,7 +105,7 @@ void usage(char * program) {
   cout << "  type                     Type of plot to create. See below." << endl;
   cout << "  input=<path>             Path to input data directory (default: current directory)" << endl;
   cout << "  output=<path>            Path to output data directory (default: current directory)" << endl;
-  cout << "  lang=<es|en>             Language for plot titles and labels (default: es)" << endl;
+  cout << "  lang=<es|us>             Language for plot titles and labels (default: es)" << endl;
   cout << "  source=<text>            Source description to include in the plot title" << endl;
   cout << "  time_res=m|h             Set time resolution for wave data to minutes or hours" << endl;
   cout << "  event_type=near|far      Set plot mode to nearshore or farshore (default: near)" << endl;
