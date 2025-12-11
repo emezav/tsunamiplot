@@ -34,3 +34,6 @@ install-win:
 	cd build;cmake --build . --config Release
 	cp build/Release/tsunamiplot.exe C:/Apps
 
+install-linux:
+	cd build;cmake --build . --config Release
+	sudo cp build/tsunamiplot /usr/local/bin/tsunamiplot

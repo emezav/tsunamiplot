@@ -160,6 +160,11 @@
         "singleInstance": true,
         "command": "make install-win",
       },
+      {
+        "name": "Install (linux)",
+        "singleInstance": true,
+        "command": "make install-linux",
+      },
     ],
     "defaultColor": "white",
     "reloadButton": "$(extensions-refresh)",

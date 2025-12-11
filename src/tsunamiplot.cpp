@@ -5,17 +5,18 @@
  * @copyright Copyright (c) 2025
  */
 
-#include <iostream>
-#include <string>
+#include "tsunamiplot.h"
+
 #include <filesystem>
+#include <iostream>
 #include <sstream>
+#include <string>
 #include <vector>
 
 #include "cmd.h"
 #include "gauges.h"
 #include "geo.h"
 #include "grid.h"
-#include "tsunamiplot.h"
 #include "Timeseries.h"
 #include "WaveData.h"
 
@@ -490,7 +491,7 @@ namespace TsunamiPlot
 
     // If lang option is en, change title to English
     string title = "Deformacion";
-    if (lang == "en")
+    if (lang == "us")
     {
       title = "Deformation";
     }
@@ -502,8 +503,8 @@ namespace TsunamiPlot
     }
 
     string heightStr = "Altura (m)";
-    // If lang option is set to "en", change heightStr to "Height (m)"
-    if (lang == "en")
+    // If lang option is set to "us", change heightStr to "Height (m)"
+    if (lang == "us")
     {
       heightStr = "Height (m)";
     }
@@ -638,7 +639,7 @@ namespace TsunamiPlot
 
     string title = "Altura estimada de Tsunami";
 
-    if (lang == "en")
+    if (lang == "us")
     {
       title = "Tsunami Height Forecast";
     }
@@ -925,8 +926,8 @@ namespace TsunamiPlot
     scriptOfs << "gmt basemap -JM10c -R" << extentStr << " -TdjLT+w30p+f2+l,,,,+o5p/5p -LJBC+c" << y0 << "+l+f+w" << scaleLengthKm << "k+o0p/30p --FONT_TITLE=6p,Helvetica --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
 
     string heightStr = "Altura (m)";
-    // If lang option is set to "en", change heightStr to "Height (m)"
-    if (lang == "en")
+    // If lang option is set to "us", change heightStr to "Height (m)"
+    if (lang == "us")
     {
       heightStr = "Height (m)";
     }
@@ -957,7 +958,7 @@ namespace TsunamiPlot
     vector<string> colors = getPointPalette();
 
     // Legend header
-    if (lang == "en")
+    if (lang == "us")
     {
       legendOfs << "H - Time and Height from Waveform" << endl;
     }
@@ -971,7 +972,7 @@ namespace TsunamiPlot
     legendOfs << "G 4p" << endl;
     legendOfs << "D 0.5p 0.5" << endl;
 
-    if (lang == "en")
+    if (lang == "us")
     {
       legendOfs << "L - C Gauge" << endl;
       legendOfs << "L - L Location" << endl;
@@ -1167,7 +1168,7 @@ namespace TsunamiPlot
     // Wave plot title
     string title = "Mareogramas";
 
-    if (lang == "en")
+    if (lang == "us")
     {
       title = "Wave profiles";
     }
@@ -1270,7 +1271,7 @@ namespace TsunamiPlot
     string eventType = Strings::tolower(options.get("event_type"));
 
     string timeAxisLabel = "Tiempo (min.)";
-    if (lang == "en")
+    if (lang == "us")
     {
       timeAxisLabel = "Time (min.)";
     }
@@ -1290,14 +1291,14 @@ namespace TsunamiPlot
       timeAdjusted = true;
 
       timeAxisLabel = "Tiempo (hr.)";
-      if (lang == "en")
+      if (lang == "us")
       {
         timeAxisLabel = "Time (hr.)";
       }
     }
 
     string waveHeightAxisLabel = "Altura (m)";
-    if (lang == "en")
+    if (lang == "us")
     {
       waveHeightAxisLabel = "Height (m)";
     }
@@ -1645,7 +1646,7 @@ namespace TsunamiPlot
 
     string title = "Areas inundadas";
 
-    if (lang == "en")
+    if (lang == "us")
     {
       title = "Inundation Areas";
     }
@@ -1878,8 +1879,8 @@ namespace TsunamiPlot
     scriptOfs << "gmt basemap -JM10c -R" << extentStr << " -TdjLT+w30p+f2+l,,,,+o5p/5p -LJBC+c" << y0 << "+l+f+w" << scaleLengthKm << "k+o0p/30p --FONT_TITLE=6p,Helvetica --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
 
     string heightStr = "Altura (m)";
-    // If lang option is set to "en", change heightStr to "Height (m)"
-    if (lang == "en")
+    // If lang option is set to "us", change heightStr to "Height (m)"
+    if (lang == "us")
     {
       heightStr = "Height (m)";
     }
@@ -1901,7 +1902,7 @@ namespace TsunamiPlot
     // Define legends for data ranges
 
     legendOfs << "L - L Altura (m)" << endl;
-    if (lang == "en")
+    if (lang == "us")
     {
       legendOfs << "L - L Height (m)" << endl;
     }

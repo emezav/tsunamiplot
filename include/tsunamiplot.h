@@ -9,6 +9,7 @@
 #define TSUNAMIPLOT_H
 
 #include "geo.h"
+
 namespace TsunamiPlot
 {
 
