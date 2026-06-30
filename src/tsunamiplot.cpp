@@ -323,29 +323,29 @@ namespace TsunamiPlot
    * @brief Create a Max Palette File object
    * @return fs::path Path to the created palette file
    */
-  fs::path createMaxPaletteFile()
+  // Build a max-wave CPT with fixed color sequence darkblue->blue->yellow->orange->red->darkred
+  // scaled to [0, maxZ].  Breakpoint fractions: 0 / 10% / 20% / 40% / 60% / 100%.
+  // Default maxZ = 1.0 (near-field N2).  Far-field F1 scenarios set palette_max_z = 7.
+  fs::path createMaxPaletteFile(float maxZ = 1.0f)
   {
     fs::path palettePath = std::filesystem::temp_directory_path() / "max.cpt";
 
     std::ofstream ofs(palettePath.string());
 
-    ofs << "# Max CPT file 0-7m\n"
-           "# z-value  R  G  B    z-value   R  G  B\n"
-           "0	0/0/127	0.1	0/0/241	L\n"
-           "0.1	0/0/241	0.2	99/255/100	L\n"
-           "0.2	99/255/100	0.3	0/212/255	L\n"
-           "0.3	0/212/255	0.4	255/255/219	L\n"
-           "0.4	255/255/219	0.6	255/255/163	L\n"
-           "0.6	255/255/163	1.0	255/213/0	L\n"
-           "1.0	255/213/0	2.0	255/9/0	L\n"
-           "2.0	255/9/0	5.0	241/0/0	L\n"
-           "5.0	241/0/0	7.0	127/0/0	B\n"
-           "# Background color\n"
-           "B	0/0/127\n"
-           "# Foreground color\n"
-           "F	255/255/255\n"
-           "# NaN color\n"
-           "N 255/255/255\n";
+    float b1 = maxZ * 0.10f;
+    float b2 = maxZ * 0.20f;
+    float b3 = maxZ * 0.40f;
+    float b4 = maxZ * 0.60f;
+
+    ofs << "# Max CPT 0-" << maxZ << "m -- darkblue->blue->yellow->orange->red->darkred\n"
+        << "0 darkblue " << b1 << " blue L\n"
+        << b1 << " blue "   << b2 << " yellow L\n"
+        << b2 << " yellow " << b3 << " orange L\n"
+        << b3 << " orange " << b4 << " red L\n"
+        << b4 << " red "    << maxZ << " darkred B\n"
+        << "B darkblue\n"
+        << "F darkred\n"
+        << "N white\n";
 
     ofs.close();
 
@@ -362,23 +362,36 @@ namespace TsunamiPlot
 
     std::ofstream ofs(palettePath.string());
 
-   ofs << "# Inundation CPT file 0-7m\n"
-           "# z-value  R  G  B    z-value   R  G  B\n"
-           "0	0/0/127	0.1	0/0/241	L\n"
-           "0.1	0/0/241	0.2	99/255/100	L\n"
-           "0.2	99/255/100	0.3	0/212/255	L\n"
-           "0.3	0/212/255	0.4	255/255/219	L\n"
-           "0.4	255/255/219	0.6	255/255/163	L\n"
-           "0.6	255/255/163	1.0	255/213/0	L\n"
-           "1.0	255/213/0	2.0	255/9/0	L\n"
-           "2.0	255/9/0	5.0	241/0/0	L\n"
-           "5.0	241/0/0	7.0	127/0/0	B\n"
-           "# Background color\n"
-           "B	0/0/127\n"
-           "# Foreground color\n"
-           "F	255/255/255\n"
-           "# NaN color\n"
-           "N 255/255/255\n";
+  //  ofs << "# Inundation CPT file 0-7m\n"
+  //          "# z-value  R  G  B    z-value   R  G  B\n"
+  //          "0	0/0/127	0.1	0/0/241	L\n"
+  //          "0.1	0/0/241	0.2	99/255/100	L\n"
+  //          "0.2	99/255/100	0.3	0/212/255	L\n"
+  //          "0.3	0/212/255	0.4	255/255/219	L\n"
+  //          "0.4	255/255/219	0.6	255/255/163	L\n"
+  //          "0.6	255/255/163	1.0	255/213/0	L\n"
+  //          "1.0	255/213/0	2.0	255/9/0	L\n"
+  //          "2.0	255/9/0	5.0	241/0/0	L\n"
+  //          "5.0	241/0/0	7.0	127/0/0	B\n"
+  //          "# Background color\n"
+  //          "B	0/0/127\n"
+  //          "# Foreground color\n"
+  //          "F	255/255/255\n"
+  //          "# NaN color\n"
+  //          "N 255/255/255\n";
+
+  // Standad  0 - 1 m inundation palette
+   ofs << "# Inundation CPT file 0-1m\n"
+          "# z-value  R  G  B    z-value   R  G  B\n"
+          "0 white 0.01 lightblue L\n"
+          "0.01 lightblue 0.1 blue L\n"
+          "0.1 blue 0.2 yellow L\n"
+          "0.2 yellow 0.4 orange L\n"
+          "0.4 orange 0.6 red L\n"
+          "0.6 red 1.0 darkred B\n"
+          "B black\n" // Background color
+          "F white\n" // Foreground color
+          "N white\n"; // NaN color
 
     ofs.close();
 
@@ -404,6 +417,10 @@ namespace TsunamiPlot
     }
 
     string langUpper = Strings::toupper(static_cast<string>(lang));
+
+    bool plotCoast = Strings::tolower(options.get("plot_coast")) != "false";
+    string coastRes = options.get("coast_resolution");
+    if (coastRes.size() != 1) coastRes = "f";
 
     // Get deform filename
     fs::path deformFilename(deformPath);
@@ -465,6 +482,8 @@ namespace TsunamiPlot
     scriptOfs << "export GMT_END_SHOW=off" << std::endl;
     // Set GMT language
     scriptOfs << "export GMT_LANGUAGE=" << langUpper << std::endl;
+    scriptOfs << "mkdir -p \"/tmp/gmt_user_$$\"" << std::endl;
+    scriptOfs << "export GMT_USERDIR=\"/tmp/gmt_user_$$\"" << std::endl;
 #endif
 
     // Create palettes on the temporary dir
@@ -474,8 +493,9 @@ namespace TsunamiPlot
     fs::path deformFilenameWithoutExtension(deformFilename);
     deformFilenameWithoutExtension.replace_extension("");
 
-    // Create a CPT file from the data on the deformation grid, -z for continuous, -D to match background and foreground for lowest and highest values
-    scriptOfs << "gmt grd2cpt \"" << deformFilename.string() << "\"  -Cpolar -Z -D -A20+a > \"" << deformPalettePath.string() << "\" " << std::endl;
+    // Create CPT from the deformation grid: polar (blue-white-red), continuous, scaled to data range.
+    // No alpha in the CPT (-A flag omitted); transparency is handled per-layer in grdimage (-t).
+    scriptOfs << "gmt grd2cpt \"" << deformFilename.string() << "\" -Cpolar -Z -D > \"" << deformPalettePath.string() << "\"" << std::endl;
 
     // Create a CPT file for bathymetry using the globe base palette
     // Bathymetry grid must be positive for land and negative for sea, so only invert the palette if requested
@@ -527,13 +547,20 @@ namespace TsunamiPlot
     // Plot bathymetry, framed, with title, deform grid overlayed, coastlines, and colorbar
     scriptOfs << "gmt grdimage -JM15c -R" << extentStr << " \"" << bathymetryPath << "\"  -C\"" << bathymetryPalettePath.string() << "\" -Bafg -BWSen+t\"" << title << "\" --FONT_TITLE=12p --FONT_ANNOT=6p,Helvetica -Vq" << std::endl;
 
-    // Overlay deformation grid
-    // -Q+z0 to make values of zero transparent
-    scriptOfs << "gmt grdimage -JM15c -R" << extentStr << " \"" << deformFilename.string() << "\"  -C\"" << deformPalettePath.string() << "\" -Q+z0 -t20 --FONT_TITLE=12p -Vq" << std::endl;
+    // Mask near-zero deformation values (|z| < 0.1 m) to NaN so the white halo around the
+    // Okada footprint disappears. Values that small are not meaningful for hazard visualization.
+    fs::path clippedDeformPath = fs::temp_directory_path() / (fs::path(deformFilename).stem().string() + "_clip.nc");
+    scriptOfs << "gmt grdclip \"" << deformFilename.string() << "\" -G\"" << clippedDeformPath.string() << "\" -Si-0.1/0.1/NaN -Vq" << std::endl;
+
+    // Overlay clipped deformation grid; -Q makes NaN cells transparent.
+    scriptOfs << "gmt grdimage -JM15c -R" << extentStr << " \"" << clippedDeformPath.string() << "\" -C\"" << deformPalettePath.string() << "\" -Q -t20 --FONT_TITLE=12p -Vq" << std::endl;
 
     // Draw coast lines
     // -W shorelines, -N1 country borders
-    scriptOfs << "gmt coast -JM15c -R" << extentStr << " -Df -N1/0.01p,gray77 -W1/0.01p,dimgray  --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
+    if (plotCoast)
+    {
+      scriptOfs << "gmt coast -JM15c -R" << extentStr << " -D" << coastRes << " -N1/0.01p,gray77 -W1/0.01p,dimgray  --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
+    }
 
     // Calculate grid length in meters
     double gridLengthX = columns * dxM;
@@ -588,12 +615,18 @@ namespace TsunamiPlot
     // End GMT session
     scriptOfs << "gmt end" << std::endl;
 
+#ifdef __linux__
+    scriptOfs << "rm -rf \"/tmp/gmt_user_$$\"" << std::endl;
+#endif
+
 // Remove palette file
 #ifndef _DEBUG
 #ifdef WIN32
     scriptOfs << "del \"" << deformPalettePath.string() << "\"" << std::endl;
+    scriptOfs << "del \"" << clippedDeformPath.string() << "\"" << std::endl;
 #elif __linux__
     scriptOfs << "rm \"" << deformPalettePath.string() << "\"" << std::endl;
+    scriptOfs << "rm \"" << clippedDeformPath.string() << "\"" << std::endl;
 #endif
 #endif
 
@@ -626,8 +659,13 @@ namespace TsunamiPlot
    */
   fs::path createMaxPlotScript(string gridPath, string zMaxPath, string waveDataPath, string gaugePath, geo::Options &options)
   {
-
-    fs::path palettePath = createMaxPaletteFile();
+    float paletteMaxZ = 1.0f;
+    if (!options.get("palette_max_z").empty())
+    {
+      try { paletteMaxZ = std::stof(options.get("palette_max_z")); }
+      catch (...) { cerr << "Warning: invalid palette_max_z value, using 1.0\n"; }
+    }
+    fs::path palettePath = createMaxPaletteFile(paletteMaxZ);
 
     string lang = Strings::tolower(options.get("lang"));
     if (!lang.length())
@@ -636,6 +674,10 @@ namespace TsunamiPlot
     }
 
     string langUpper = Strings::toupper(static_cast<string>(lang));
+
+    bool plotCoast = Strings::tolower(options.get("plot_coast")) != "false";
+    string coastRes = options.get("coast_resolution");
+    if (coastRes.size() != 1) coastRes = "f";
 
     string title = "Altura estimada de Tsunami";
 
@@ -714,63 +756,172 @@ namespace TsunamiPlot
     // Use filename from gridPath to create a .bat file inside fs::temp_directory_path()
     fs::path scriptPath = fs::temp_directory_path() / (fs::path(zMaxPath).stem().string() + fileExt);
 
-    // Generate legend from gauges
-    fs::path legendFile = fs::temp_directory_path() / "max_legend.txt";
-
     // Create batch file
     std::ofstream scriptOfs(scriptPath.string());
 
-    // Get wave data as Timeseries
-    Timeseries pointData(waveDataPath);
+    bool hasWaveData = !waveDataPath.empty() && fs::exists(fs::path(waveDataPath));
+    bool hasGauges = !gaugePath.empty() && fs::exists(fs::path(gaugePath));
 
-    // Set to true if time adjustment is applied
-    bool timeAdjusted = false;
-
-    // Apply time_res factor to wave data. m=minutes (factor = 1), h=hours (factor=1/60)
+    vector<WavePoint> firstWave;
+    vector<WavePoint> maxHeight;
+    string timeUnits = "min";
     float timeResFactor = 1.0f;
-
-    // Get time resolution from options (minutes or hours)
-    string timeRes = Strings::tolower(options.get("time_res"));
-
-    // Get plot mode from options (far or near)
     string eventType = Strings::tolower(options.get("event_type"));
 
-    string timeUnits = "min";
-    // Change resolution to hours if requested or if plot mode is far
-    if (timeRes == "h" || timeRes == "hours" || eventType == "far")
+    if (hasWaveData)
     {
-      timeResFactor = 1.0f / 60.0f;
-      pointData = pointData.applyTimeFactor(timeResFactor);
-      // Create a temporary wave data file with the adjusted time
-      fs::path tempWaveDataPath = fs::temp_directory_path() / (fs::path(waveDataPath).stem().string() + "_time_adjusted.dat");
-      // Save the adjusted wave data to the temporary file
-      pointData.save(tempWaveDataPath.string());
-      // Use the temporary wave data file for plotting
-      waveDataPath = tempWaveDataPath.string();
-      timeAdjusted = true;
+      Timeseries pointData(waveDataPath);
 
-      timeUnits = "hrs";
+      bool timeAdjusted = false;
+      string timeRes = Strings::tolower(options.get("time_res"));
+
+      if (timeRes == "h" || timeRes == "hours" || eventType == "far")
+      {
+        timeResFactor = 1.0f / 60.0f;
+        pointData = pointData.applyTimeFactor(timeResFactor);
+        fs::path tempWaveDataPath = fs::temp_directory_path() / (fs::path(waveDataPath).stem().string() + "_time_adjusted.dat");
+        pointData.save(tempWaveDataPath.string());
+        waveDataPath = tempWaveDataPath.string();
+        timeAdjusted = true;
+        timeUnits = "hrs";
+      }
+
+      float hFirstWave = 0.01f;
+      float deltaFirstWave = 1.0f * timeResFactor;
+      if (options.contains("h_first_wave")) { hFirstWave = options.getFloat("h_first_wave"); }
+      if (options.contains("delta_first_wave")) { deltaFirstWave = options.getFloat("delta_first_wave") * timeResFactor; }
+
+      WaveData waveData(pointData, hFirstWave, deltaFirstWave);
+      firstWave = waveData.firstWave();
+      maxHeight = waveData.maxHeight();
     }
 
-    // Get the wave data from the time series
-    float hFirstWave = 0.01f;                    // Minimum height to consider a first wave in meters (1 centimeter)
-    float deltaFirstWave = 1.0f * timeResFactor; // Minimum time (minutes) to consider a first wave
-
-    if (options.contains("h_first_wave"))
+    // Pre-load gauges so chunk count is known before writing any GMT commands
+    Gauges gauges;
+    vector<string> gaugeColors = getPointPalette();
+    if (hasGauges && hasWaveData)
     {
-      hFirstWave = options.getFloat("h_first_wave");
+      if (loadGauges(gaugePath, gauges, x0, y0, rows, columns, dxDeg, dyDeg) != true)
+      {
+        cerr << "Unable to load gauges from " << gaugePath << ", skipping gauge overlay." << endl;
+        hasGauges = false;
+      }
+      else if (gauges.size() != firstWave.size())
+      {
+        cerr << "Warning! number of gauges (" << gauges.size() << ") does not match number of wave data series (" << firstWave.size() << ")" << endl;
+        cerr << "Maybe some new gauges were added after the wave data was generated." << endl;
+      }
     }
 
-    if (options.contains("delta_first_wave"))
+    // Layout: split gauges into sub-tables of N_PER_CHUNK placed side by side.
+    //
+    // Map width comes from the grid's geographic aspect ratio targeting TARGET_MAP_H height.
+    // Sub-table width is then derived from the map width (map_w / n_chunks), so the tables
+    // always align with the map.  A minimum of MIN_CHUNK_W enforces legibility; when that
+    // minimum forces the map wider than the AR-based value, map_w expands only modestly.
+    const int   N_PER_CHUNK  = 25;
+    const float TARGET_MAP_H = 20.0f;  // cm: target Mercator map height
+    const int   MIN_MAP_W    = 15;     // cm: absolute minimum map width
+    const int   MIN_CHUNK_W  = 8;      // cm: minimum sub-table column width
+
+    int n_gauges = (hasGauges && hasWaveData) ? (int)std::min(gauges.size(), firstWave.size()) : 0;
+    int n_chunks = (n_gauges > 0) ? (n_gauges + N_PER_CHUNK - 1) / N_PER_CHUNK : 1;
+
+    float lon_span = (float)(columns * dxDeg);
+    float lat_span = (float)(rows    * dyDeg);
+
+    // Map width from aspect ratio (near-equator Mercator approximation)
+    int map_w_i = (lat_span > 0.0f)
+                    ? std::max(MIN_MAP_W, (int)std::round(TARGET_MAP_H * (lon_span / lat_span)))
+                    : MIN_MAP_W;
+
+    // Sub-table width = map_w / n_chunks, enforcing MIN_CHUNK_W.
+    // If rounding pushes map_w slightly wider, accept it (keeps table columns equal).
+    int chunk_w_i = map_w_i;  // fallback when no gauges
+    if (n_gauges > 0)
     {
-      deltaFirstWave = options.getFloat("delta_first_wave") * timeResFactor;
+      chunk_w_i = std::max(MIN_CHUNK_W, (int)std::round((float)map_w_i / (float)n_chunks));
+      map_w_i   = n_chunks * chunk_w_i;  // realign (may expand by < MIN_CHUNK_W total)
     }
 
-    WaveData waveData(pointData, hFirstWave, deltaFirstWave);
+    string map_w_str   = std::to_string(map_w_i) + "c";
+    string chunk_w_str = std::to_string(chunk_w_i) + "c";
+    float legend_h = 22.0f;  // cm: generous for up to N_PER_CHUNK rows + header
+    int heightPrecision = (eventType == "near") ? 2 : 4;
 
-    // Get first wave and max height points
-    vector<WavePoint> firstWave = waveData.firstWave();
-    vector<WavePoint> maxHeight = waveData.maxHeight();
+    // Write one legend file per chunk before the GMT script is written
+    vector<fs::path> chunkLegendFiles;
+    if (hasGauges && hasWaveData && n_gauges > 0)
+    {
+      for (int chunk = 0; chunk < n_chunks; chunk++)
+      {
+        int g_start = chunk * N_PER_CHUNK;
+        int g_end = (int)std::min(g_start + N_PER_CHUNK, n_gauges);
+
+        fs::path chunkFile = fs::temp_directory_path() / ("max_legend_chunk_" + std::to_string(chunk) + ".txt");
+        std::ofstream chunkOfs(chunkFile.string());
+
+        if (lang == "us") chunkOfs << "H - Time and Height from Waveform" << endl;
+        else              chunkOfs << "H - Tiempo y altura por mareograma" << endl;
+        chunkOfs << "N 0.10 0.40 0.125 0.125 0.125 0.125" << endl;
+        chunkOfs << "G 4p" << endl;
+        chunkOfs << "D 0.5p 0.5" << endl;
+
+        if (lang == "us")
+        {
+          chunkOfs << "L - C Gauge" << endl;
+          chunkOfs << "L - L Location" << endl;
+          chunkOfs << "L - C T. First (" << timeUnits << ")" << endl;
+          chunkOfs << "L - C H. First (m)" << endl;
+          chunkOfs << "L - C T. Max (" << timeUnits << ")" << endl;
+          chunkOfs << "L - C H. Max (m)" << endl;
+        }
+        else
+        {
+          chunkOfs << "L - C Punto" << endl;
+          chunkOfs << "L - L Ubicacion" << endl;
+          chunkOfs << "L - C T. Primero (" << timeUnits << ")" << endl;
+          chunkOfs << "L - C H. Primero (m)" << endl;
+          chunkOfs << "L - C T. Max (" << timeUnits << ")" << endl;
+          chunkOfs << "L - C H. Max (m)" << endl;
+        }
+        chunkOfs << "G 4p" << endl;
+        chunkOfs << "D 0.5p 0.5" << endl;
+
+        for (int i = g_start; i < g_end; i++)
+        {
+          string color = gaugeColors[i % gaugeColors.size()];
+          float h_first = firstWave[i].height;
+          float t_first = firstWave[i].time;
+          float h_max   = maxHeight[i].height;
+          float t_max   = maxHeight[i].time;
+
+          chunkOfs << "S 0.5c c 0.2c " << color << " 0/0/0" << endl;
+          chunkOfs << "L - L " << Strings::replaceAll(gauges.name[i], "_", " ") << endl;
+
+          if (t_first > 0.0f || t_max > 0.0f)
+          {
+            chunkOfs << "L - C " << std::fixed << std::setprecision(1) << t_first << endl;
+            chunkOfs << "L - C " << std::fixed << std::setprecision(heightPrecision) << h_first << endl;
+            chunkOfs << "L - C " << std::fixed << std::setprecision(1) << t_max << endl;
+            chunkOfs << "L - C " << std::fixed << std::setprecision(heightPrecision) << h_max << endl;
+          }
+          else
+          {
+            chunkOfs << "L - C --" << endl;
+            chunkOfs << "L - C --" << endl;
+            chunkOfs << "L - C --" << endl;
+            chunkOfs << "L - C --" << endl;
+          }
+
+          chunkOfs << "G 4p" << endl;
+          chunkOfs << "D 0.5p 0.5" << endl;
+        }
+
+        chunkOfs.close();
+        chunkLegendFiles.push_back(chunkFile);
+      }
+    }
 
     fs::path bathymetryPalettePath = fs::temp_directory_path() / "bathymetry_palette.cpt";
 
@@ -786,12 +937,19 @@ namespace TsunamiPlot
     // Set GMT_LANGUAGE
     scriptOfs << "set \"GMT_LANGUAGE=" << langUpper << "\"" << std::endl;
 #elif __linux__
+    scriptOfs << "#!/bin/bash" << std::endl;
     // Set GMT_VERBOSE=quiet
     scriptOfs << "export GMT_VERBOSE=quiet" << std::endl;
     // Set GMT_END_SHOW=off
     scriptOfs << "export GMT_END_SHOW=off" << std::endl;
     // Set GMT language
     scriptOfs << "export GMT_LANGUAGE=" << langUpper << std::endl;
+    // AppArmor workaround: the gs profile blocks ~/.gmt/sessions/gmt_0.ps- (dash extension).
+    // Redirect the GMT user dir to /tmp/ (covered by the user-tmp abstraction, owner /tmp/** rwkl)
+    // so that gmt_0.ps- lands under /tmp/ where gs can read it.
+    // The directory must exist before GMT starts or it falls back to ~/.gmt/.
+    scriptOfs << "mkdir -p \"/tmp/gmt_user_$$\"" << std::endl;
+    scriptOfs << "export GMT_USERDIR=\"/tmp/gmt_user_$$\"" << std::endl;
 #endif
 
     // Create a CPT file for bathymetry using the globe base palette
@@ -833,20 +991,22 @@ namespace TsunamiPlot
     // set PS_LINE_JOIN to ROUND
     scriptOfs << "gmt set PS_LINE_JOIN round" << std::endl;
 
-    // plot the legend file
-    scriptOfs << "gmt legend " << legendFile << " -Rd -JX12c/9c -DjLT+w10c --FONT_ANNOT_PRIMARY=8p,Helvetica --FONT_TITLE=8p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
+    // Map is drawn first; legend follows below to avoid Cartesian coordinate-system
+    // interference with the subsequent geographic grdimage calls.
+    bool legendActive = hasGauges && hasWaveData && !chunkLegendFiles.empty();
+    int yUp = legendActive ? (int)(legend_h + 2.0f) : 0;
 
-    // Plot the grid - Offset Y by 12c to leave space for the legend
-    // scriptOfs << "gmt grdimage -JM10c  -R\"" << gridPath << "\" \"" << gridPath << "\" -Cglobe -Y12c -Vq" << std::endl;
+    // -- shift Y up to leave room for the legend below
+    string yUpArg = legendActive ? (" -Y" + std::to_string(yUp) + "c") : "";
 
-    // Plot bathymetry - Offset Y by 12C to leave space for the legend, override -R to match grid. Set transparency to 70 percent
-    scriptOfs << "gmt grdimage -JM10c -R" << extentStr << " \"" << gridPath << "\"  -C\"" << bathymetryPalettePath.string() << "\" -Y11c -t70 -Vq" << std::endl;
+    // Bathymetry layer
+    // scriptOfs << "gmt grdimage -JM" << map_w_str << " -R" << extentStr << " \"" << gridPath << "\"  -C\"" << bathymetryPalettePath.string() << "\"" << yUpArg << " -t70 -Vq" << std::endl;
 
     // Plot zmax grid
-    scriptOfs << "gmt grdimage -JM10c  -R" << extentStr << " \"" << zMaxPlotPath.string() << "\" -C\"" << palettePath.string() << "\" -Qwhite -Vq" << std::endl;
+    scriptOfs << "gmt grdimage -JM" << map_w_str << "  -R" << extentStr << " \"" << zMaxPlotPath.string() << "\" " << yUpArg << " -C\"" << palettePath.string() << "\" -Qwhite -Vq" << std::endl;
 
     // Draw map frame and title
-    scriptOfs << "gmt basemap -JM10c -R" << extentStr << " -Baf -BWSen+t\"" << title << "\" --FONT_TITLE=14p,Helvetica --FONT_ANNOT=6p,Helvetica -Vq" << std::endl;
+    scriptOfs << "gmt basemap -JM" << map_w_str << " -R" << extentStr << " -Baf -BWSen+t\"" << title << "\" --FONT_TITLE=14p,Helvetica --FONT_ANNOT=6p,Helvetica -Vq" << std::endl;
 
     // Calculate grid length in meters
     double gridLengthX = columns * dxM;
@@ -893,16 +1053,25 @@ namespace TsunamiPlot
 #endif
 
     // Draw coast lines
-    // If outline option is set to true, plot outline file instead of coastlines
-    if (options.get("outline").length() > 0)
+    // If outline option is set, plot outline file instead of coastlines
+
+    // Outline is expected to be in the same directory as the grid file.
+    // The outline option defines the filename of the outline file. If the outline option is not set, the default filename is "contour.gmt".
+    fs::path outlinePath(gridPath);
+
+    string outlineFilename = options.get("outline");
+
+    if (outlineFilename.empty())
     {
-      fs::path outlinePath(options.get("outline"));
-      if (!fs::exists(outlinePath))
-      {
-        cerr << "Warning! outline file " << outlinePath.string() << " does not exist." << endl;
-      }
-      else
-      {
+      outlineFilename = "contour.gmt";
+    }
+
+    outlinePath.replace_filename(outlineFilename);
+
+    // Check if outline file exists
+    if (fs::exists(outlinePath))
+    {      
+        cout << "Using outline file: " << fs::canonical(outlinePath).string() << endl;
         // If file is binary plot with -bi2f
         if (Strings::tolower(outlinePath.extension().string()) == ".bin" || Strings::tolower(outlinePath.extension().string()) == ".bf2")
         {
@@ -911,19 +1080,18 @@ namespace TsunamiPlot
         else
         {
           // Plot as text file, add -J and -R to match the grid
-          scriptOfs << "gmt plot -JM10c -R" << extentStr << " \"" << fs::canonical(outlinePath).string() << "\" -Wthinnest,dimgray --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
-        }
-      }
+          scriptOfs << "gmt plot -JM" << map_w_str << " -R" << extentStr << " \"" << fs::canonical(outlinePath).string() << "\" -Wthin,dimgray --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
+        }      
     }
-    else
+    else if (plotCoast)
     {
       // Fall back to coastlines and country borders
       // -W shorelines, -N1 country borders
-      scriptOfs << "gmt coast -JM10c -R" << extentStr << " -Df -N1/0.01p,gray77 -Wthinnest,dimgray  --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
+      scriptOfs << "gmt coast -JM" << map_w_str << " -R" << extentStr << " -D" << coastRes << " -N1/0.01p,gray77 -Wthinnest,dimgray  --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
     }
 
     // Draw directional rose and scalebar
-    scriptOfs << "gmt basemap -JM10c -R" << extentStr << " -TdjLT+w30p+f2+l,,,,+o5p/5p -LJBC+c" << y0 << "+l+f+w" << scaleLengthKm << "k+o0p/30p --FONT_TITLE=6p,Helvetica --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
+    scriptOfs << "gmt basemap -JM" << map_w_str << " -R" << extentStr << " -TdjLT+w30p+f2+l,,,,+o5p/5p -LJBC+c" << y0 << "+l+f+w" << scaleLengthKm << "k+o0p/30p --FONT_TITLE=8p,Helvetica --FONT_ANNOT_PRIMARY=8p,Helvetica --FONT_LABEL=8p,Helvetica -Vq" << std::endl;
 
     string heightStr = "Altura (m)";
     // If lang option is set to "us", change heightStr to "Height (m)"
@@ -932,152 +1100,74 @@ namespace TsunamiPlot
       heightStr = "Height (m)";
     }
 
-    // Draw color bar
-    scriptOfs << "gmt colorbar  -JM10c -R" << extentStr << " -DJMR+w6c/0.25c+o20p/0p+v -C\"" << palettePath.string() << "\" -Bafg -Baf+l\"" << heightStr << "\" -Bxa1f1 -B+u\" m.\" --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
-
-    // Attempt to load gauges
-    Gauges gauges;
-    if (loadGauges(gaugePath, gauges, x0, y0, rows, columns, dxDeg, dyDeg) != true)
-    {
-      cerr << "Unable to load gauges from " << gaugePath << endl;
-      scriptOfs.close();
-      fs::remove(scriptPath);
-      return fs::path();
-    }
-
-    // Check if number of gauges matches number of wave data series
-    if (gauges.size() != firstWave.size())
-    {
-      cerr << "Warning! number of gauges (" << gauges.size() << ") does not match number of wave data series (" << firstWave.size() << ")" << endl;
-      cerr << "Maybe some new gauges were added after the wave data was generated." << endl;
-    }
-
-    std::ofstream legendOfs(legendFile.string());
-
-    // Generate GMT table for gauges with the point palette
-    vector<string> colors = getPointPalette();
-
-    // Legend header
-    if (lang == "us")
-    {
-      legendOfs << "H - Time and Height from Waveform" << endl;
-    }
-    else
-    {
-      legendOfs << "H - Tiempo y altura por mareograma" << endl;
-    }
-    // Define 6 columns
-    legendOfs << "N 6" << endl;
-    // Define a gap of 4 points between rows
-    legendOfs << "G 4p" << endl;
-    legendOfs << "D 0.5p 0.5" << endl;
-
-    if (lang == "us")
-    {
-      legendOfs << "L - C Gauge" << endl;
-      legendOfs << "L - L Location" << endl;
-      legendOfs << "L - C T. First (" << timeUnits << ")" << endl;
-      legendOfs << "L - C H. First (m)" << endl;
-      legendOfs << "L - C T. Max (" << timeUnits << ")" << endl;
-      legendOfs << "L - C H. Max (m)" << endl;
-    }
-    else
-    {
-      legendOfs << "L - C Punto" << endl;
-      legendOfs << "L - L Ubicacion" << endl;
-      legendOfs << "L - C T. Primero (" << timeUnits << ")" << endl;
-      legendOfs << "L - C H. Primero (m)" << endl;
-      legendOfs << "L - C T. Max (" << timeUnits << ")" << endl;
-      legendOfs << "L - C H. Max (m)" << endl;
-    }
-
-    legendOfs << "G 4p" << endl;
-    legendOfs << "D 0.5p 0.5" << endl;
+    // Draw color bar (height = 70% of target map height)
+    string cbar_h_str = std::to_string((int)std::round(TARGET_MAP_H * 0.70f)) + "c";
+    scriptOfs << "gmt colorbar  -JM" << map_w_str << " -R" << extentStr << " -DJMR+w" << cbar_h_str << "/0.4c+o20p/0p+v -C\"" << palettePath.string() << "\" -Bafg -Baf+l\"" << heightStr << "\" -Bxa1f1 -B+u\" m.\" --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
 
     std::stringstream removeFilesSs;
 
-    int heightPrecision = 4;
-    if (eventType == "near")
+    // Gauge circles on the map (gauges already loaded above for layout computation)
+    if (hasGauges && hasWaveData && n_gauges > 0)
     {
-      heightPrecision = 2;
-    }
-
-    for (size_t i = 0; i < firstWave.size(); i++)
-    {
-      if (i >= gauges.size())
-      {
-        cerr << "Warning! Not enough gauges for wave data series index " << i << endl;
-        break;
-      }
-
-      string color = colors[i % colors.size()];
-
-      // Get first wave data
-      float h_first_wave = firstWave[i].height;
-      float t_first_wave = firstWave[i].time;
-
-      // Get max height data
-      float h_max_wave = maxHeight[i].height;
-      float t_max_wave = maxHeight[i].time;
-
-      // Output legend row for the gauge with its first wave data
-      legendOfs << "S 0.5c c 0.2c " << color << " 0/0/0" << endl;
-      legendOfs << "L - L " << Strings::replaceAll(gauges.name[i], "_", " ") << endl;
-      // Plot t_first_wave and h_first_wave in any case
-
-      // If t_first_wave or t_max_wave are both greater than zero, show the values, otherwise show dashes.
-      if (t_first_wave > 0.0f || t_max_wave > 0.0f)
-      {
-        legendOfs << "L - C " << std::fixed << std::setprecision(1) << t_first_wave << endl;
-        legendOfs << "L - C " << std::fixed << std::setprecision(heightPrecision) << h_first_wave << endl;
-        legendOfs << "L - C " << std::fixed << std::setprecision(1) << t_max_wave << endl;
-        legendOfs << "L - C " << std::fixed << std::setprecision(heightPrecision) << h_max_wave << endl;
-      }
-      else
-      {
-        legendOfs << "L - C --" << endl;
-        legendOfs << "L - C --" << endl;
-        legendOfs << "L - C --" << endl;
-        legendOfs << "L - C --" << endl;
-      }
-
-      // cout << "Gauge " << gauges.name[i] << ": First wave at " << t_first_wave << " " << timeUnits << " with height " << h_first_wave << " m. Max wave at " << t_max_wave << " " << timeUnits << " with height " << h_max_wave << " m." << endl;
-
-      legendOfs << "G 4p" << endl;
-      legendOfs << "D 0.5p 0.5" << endl;
-
-      // Create a mark file for the gauge
-      fs::path markFile = fs::temp_directory_path() / ("mark_" + std::to_string(i) + ".txt");
-      std::ofstream markOfs(markFile.string());
-      markOfs << gauges.longitude[i] << " " << gauges.latitude[i] << endl;
-      markOfs.close();
-      // cout << markFile << endl;
-
-      // Line to plot the gauge mark
       string gaugeSize = options.get("gauge_size");
+      if (gaugeSize.empty()) gaugeSize = "2p";
 
-      // Set gauge size to 20 by default
-      if (gaugeSize.empty())
+      for (int i = 0; i < n_gauges; i++)
       {
-        gaugeSize = "2p";
-      }
+        if (i >= (int)gauges.size()) break;
+        string color = gaugeColors[i % gaugeColors.size()];
+        fs::path markFile = fs::temp_directory_path() / ("mark_" + std::to_string(i) + ".txt");
+        std::ofstream markOfs(markFile.string());
+        markOfs << gauges.longitude[i] << " " << gauges.latitude[i] << endl;
+        markOfs.close();
 
-      // Plot  circles with gauge size
-      scriptOfs << "gmt plot \"" << markFile.string() << "\" -Sc" << gaugeSize << " -W0.2p,black -G" << color << " -Vq" << std::endl;
+        scriptOfs << "gmt plot \"" << markFile.string() << "\" -Sc" << gaugeSize << " -W0.2p,black -G" << color << " -Vq" << std::endl;
 
 #ifdef WIN32
-      // Save the mark file to be removed later
-      removeFilesSs << "del \"" << markFile.string() << "\"" << std::endl;
+        removeFilesSs << "del \"" << markFile.string() << "\"" << std::endl;
 #elif __linux__
-      // Save the mark file to be removed later
-      removeFilesSs << "rm \"" << markFile.string() << "\"" << std::endl;
+        removeFilesSs << "rm \"" << markFile.string() << "\"" << std::endl;
 #endif
+      }
+
+      // Cleanup chunk legend files
+      for (auto& chunkFile : chunkLegendFiles)
+      {
+#ifdef WIN32
+        removeFilesSs << "del \"" << chunkFile.string() << "\"" << std::endl;
+#elif __linux__
+        removeFilesSs << "rm \"" << chunkFile.string() << "\"" << std::endl;
+#endif
+      }
     }
 
-    legendOfs.close();
+    // Legend below map: move origin back down, draw chunks side by side in a Cartesian frame.
+    // -Y-{yUp}c undoes the upward shift applied to the first grdimage.
+    // Each chunk has a fixed width (LEGEND_CHUNK_W_CM) and the whole table is centered
+    // under the map.  All chunks anchor their TL at the top of the frame so content
+    // starts immediately below the map regardless of how many gauges there are.
+    if (legendActive)
+    {
+      const int LEGEND_CHUNK_W_CM = 20;
+      int fixed_chunk_w = std::min(LEGEND_CHUNK_W_CM, map_w_i / std::max(1, n_chunks));
+      int x_offset_i    = std::max(0, (map_w_i - n_chunks * fixed_chunk_w) / 2);
+      string fixed_chunk_w_str = std::to_string(fixed_chunk_w) + "c";
+      string totalW    = std::to_string(map_w_i) + "c";
+      string legendHStr = std::to_string((int)legend_h) + "c";
+      scriptOfs << "gmt legend \"" << chunkLegendFiles[0].string() << "\" -Rd -JX" << totalW << "/" << legendHStr << " -Y-" << yUp << "c -Dx" << x_offset_i << "c/" << legendHStr << "+jTL+w" << fixed_chunk_w_str << " --FONT_ANNOT_PRIMARY=8p,Helvetica --FONT_TITLE=8p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
+      for (int c = 1; c < (int)chunkLegendFiles.size(); c++)
+      {
+        scriptOfs << "gmt legend \"" << chunkLegendFiles[c].string() << "\" -Dx" << (x_offset_i + c * fixed_chunk_w) << "c/" << legendHStr << "+jTL+w" << fixed_chunk_w_str << " --FONT_ANNOT_PRIMARY=8p,Helvetica --FONT_TITLE=8p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
+      }
+    }
 
     // End GMT modern session
     scriptOfs << "gmt end" << std::endl;
+
+#ifdef __linux__
+    // Clean up the temporary GMT user dir used for the AppArmor workaround.
+    scriptOfs << "rm -rf \"/tmp/gmt_user_$$\"" << std::endl;
+#endif
 
 #ifndef _DEBUG
 #ifdef WIN32
@@ -1088,8 +1178,6 @@ namespace TsunamiPlot
     }
     // Remove palette file
     removeFilesSs << "del \"" << palettePath.string() << "\"" << std::endl;
-    // Remove temporary legend file
-    removeFilesSs << "del \"" << legendFile.string() << "\"" << std::endl;
 #elif __linux__
     if (tempZMaxGridCreated)
     {
@@ -1098,8 +1186,6 @@ namespace TsunamiPlot
     }
     // Remove palette file
     removeFilesSs << "rm \"" << palettePath.string() << "\"" << std::endl;
-    // Remove temporary legend file
-    removeFilesSs << "rm \"" << legendFile.string() << "\"" << std::endl;
 #endif
 
     // Append remove commands to the batch file
@@ -1256,6 +1342,8 @@ namespace TsunamiPlot
     scriptOfs << "export GMT_END_SHOW=off" << std::endl;
     // Set GMT language
     scriptOfs << "export GMT_LANGUAGE=" << langUpper << std::endl;
+    scriptOfs << "mkdir -p \"/tmp/gmt_user_$$\"" << std::endl;
+    scriptOfs << "export GMT_USERDIR=\"/tmp/gmt_user_$$\"" << std::endl;
 #endif
 
     // Get wave data as Timeseries
@@ -1485,6 +1573,10 @@ namespace TsunamiPlot
       // set PS_LINE_JOIN to ROUND
       scriptOfs << "gmt set PS_LINE_JOIN ROUND" << std::endl;
 
+      // annotate W (left), E (right), S (bottom); tick-only N (top)
+      scriptOfs << "gmt set MAP_FRAME_AXES WSEn" << std::endl;
+
+
       cout << (waveImagePath / imageFilename).string() << ".png" << endl;
 
       int currentTile = startTile;
@@ -1607,6 +1699,10 @@ namespace TsunamiPlot
     }
 #endif
 
+#ifdef __linux__
+    scriptOfs << "rm -rf \"/tmp/gmt_user_$$\"" << std::endl;
+#endif
+
     // Close the batch file
     scriptOfs.close();
 
@@ -1643,6 +1739,10 @@ namespace TsunamiPlot
     }
 
     string langUpper = Strings::toupper(static_cast<string>(lang));
+
+    bool plotCoast = Strings::tolower(options.get("plot_coast")) != "false";
+    string coastRes = options.get("coast_resolution");
+    if (coastRes.size() != 1) coastRes = "f";
 
     string title = "Areas inundadas";
 
@@ -1741,12 +1841,15 @@ namespace TsunamiPlot
     // Set GMT_LANGUAGE
     scriptOfs << "set \"GMT_LANGUAGE=" << langUpper << "\"" << std::endl;
 #elif __linux__
+    scriptOfs << "#!/bin/bash" << std::endl;
     // Set GMT_VERBOSE=quiet
     scriptOfs << "export GMT_VERBOSE=quiet" << std::endl;
     // Set GMT_END_SHOW=off
     scriptOfs << "export GMT_END_SHOW=off" << std::endl;
     // Set GMT language
     scriptOfs << "export GMT_LANGUAGE=" << langUpper << std::endl;
+    scriptOfs << "mkdir -p \"/tmp/gmt_user_$$\"" << std::endl;
+    scriptOfs << "export GMT_USERDIR=\"/tmp/gmt_user_$$\"" << std::endl;
 #endif
 
     // Create a CPT file for bathymetry using the globe base palette
@@ -1789,11 +1892,11 @@ namespace TsunamiPlot
     scriptOfs << "gmt set PS_LINE_JOIN round" << std::endl;
 
     // plot the legend file
-    scriptOfs << "gmt legend " << legendFile << " -Rd -JX12c/9c -DjLT -F --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_TITLE=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
+    scriptOfs << "gmt legend " << legendFile << " -Rd -JX12c/9c -DjLB+o0c/-2c -F --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_TITLE=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
 
 
     // Plot bathymetry - Offset Y by 12C to leave space for the legend, override -R to match grid. Set transparency to 70 percent
-    scriptOfs << "gmt grdimage -JM10c -R" << extentStr << " \"" << gridPath << "\"  -C\"" << bathymetryPalettePath.string() << "\" -Y11c -Vq" << std::endl;
+    // scriptOfs << "gmt grdimage -JM10c -R" << extentStr << " \"" << gridPath << "\"  -C\"" << bathymetryPalettePath.string() << "\" -Y11c -Vq" << std::endl;
 
     // Plot inundation grid
     scriptOfs << "gmt grdimage -JM10c  -R" << extentStr << " \"" << inundPlotPath.string() << "\" -C\"" << palettePath.string() << "\" -Q -Vq" << std::endl;
@@ -1846,16 +1949,25 @@ namespace TsunamiPlot
 #endif
 
     // Draw coast lines
-    // If outline option is set to true, plot outline file instead of coastlines
-    if (options.get("outline").length() > 0)
+    // If outline option is set, plot outline file instead of coastlines
+
+    // Outline is expected to be in the same directory as the grid file.
+    // The outline option defines the filename of the outline file. If the outline option is not set, the default filename is "contour.gmt".
+    fs::path outlinePath(gridPath);
+
+    string outlineFilename = options.get("outline");
+
+    if (outlineFilename.empty())
     {
-      fs::path outlinePath(options.get("outline"));
-      if (!fs::exists(outlinePath))
-      {
-        cerr << "Warning! outline file " << outlinePath.string() << " does not exist." << endl;
-      }
-      else
-      {
+      outlineFilename = "contour.gmt";
+    }
+
+    outlinePath.replace_filename(outlineFilename);
+
+    // Check if outline file exists
+    if (fs::exists(outlinePath))
+    {      
+        cout << "Using outline file: " << fs::canonical(outlinePath).string() << endl;
         // If file is binary plot with -bi2f
         if (Strings::tolower(outlinePath.extension().string()) == ".bin" || Strings::tolower(outlinePath.extension().string()) == ".bf2")
         {
@@ -1864,15 +1976,14 @@ namespace TsunamiPlot
         else
         {
           // Plot as text file, add -J and -R to match the grid
-          scriptOfs << "gmt plot -JM10c -R" << extentStr << " \"" << fs::canonical(outlinePath).string() << "\" -Wthinnest,dimgray --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
-        }
-      }
+          scriptOfs << "gmt plot -JM10c -R" << extentStr << " \"" << fs::canonical(outlinePath).string() << "\" -Wthin,dimgray --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
+        }      
     }
-    else
+    else if (plotCoast)
     {
       // Fall back to coastlines and country borders
       // -W shorelines, -N1 country borders
-      scriptOfs << "gmt coast -JM10c -R" << extentStr << " -Df -N1/0.01p,gray77 -Wthinnest,dimgray  --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
+      scriptOfs << "gmt coast -JM10c -R" << extentStr << " -D" << coastRes << " -N1/0.01p,gray77 -Wthinnest,dimgray  --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
     }
 
     // Draw directional rose and scalebar
@@ -1906,16 +2017,20 @@ namespace TsunamiPlot
     {
       legendOfs << "L - L Height (m)" << endl;
     }
-    legendOfs << "S 0.25c s 0.25c 255/40/0 thinnest 0.5c 2m - 5m" << endl;
-    legendOfs << "S 0.25c s 0.25c 255/153/0 thinnest 0.5c 1m - 2m" << endl;
-    legendOfs << "S 0.25c s 0.25c 255/230/0 thinnest 0.5c 0.3m - 1m" << endl;
-    legendOfs << "S 0.25c s 0.25c 0/255/0 thinnest 0.5c 0.01m - 0.3m" << endl;
+    legendOfs << "S 0.25c s 0.25c 230/0/0 thinnest 0.5c 0.6m - 1m" << endl; // red - dark red
+    legendOfs << "S 0.25c s 0.25c 255/153/0 thinnest 0.5c 0.4m - 0.6m" << endl; // orange-red
+    legendOfs << "S 0.25c s 0.25c 255/230/0 thinnest 0.5c 0.2m - 0.4m" << endl; // yellow-orange
+    legendOfs << "S 0.25c s 0.25c 0/0/255 thinnest 0.5c 0.01m - 0.2m" << endl; // blue
     legendOfs.close();
 
     legendOfs.close();
 
     // End GMT modern session
     scriptOfs << "gmt end" << std::endl;
+
+#ifdef __linux__
+    scriptOfs << "rm -rf \"/tmp/gmt_user_$$\"" << std::endl;
+#endif
 
 #ifndef _DEBUG
    std::stringstream removeFilesSs;
@@ -1954,6 +2069,278 @@ namespace TsunamiPlot
 #endif
 
 // Show script path in debug mode
+#ifdef _DEBUG
+    cout << scriptPath.string() << endl;
+#endif
+
+    return scriptPath;
+  }
+
+  /**
+   * @brief Create a shell script to plot the maximum velocity grid.
+   * The color palette is auto-scaled to the data range using gmt grd2cpt
+   * with the same color progression as the max-wave palette.
+   */
+  fs::path createVmaxPlotScript(string vmaxPath, string gridPath, geo::Options &options)
+  {
+    // palette_max_z does not apply here: grd2cpt -Z -D auto-scales to the data range
+    fs::path maxPalettePath = createMaxPaletteFile(1.0f);
+
+    string lang = Strings::tolower(options.get("lang"));
+    if (!lang.length())
+    {
+      lang = "es";
+    }
+
+    string langUpper = Strings::toupper(static_cast<string>(lang));
+
+    bool plotCoast = Strings::tolower(options.get("plot_coast")) != "false";
+    string coastRes = options.get("coast_resolution");
+    if (coastRes.size() != 1) coastRes = "f";
+
+    string title = "Velocidad maxima";
+    if (lang == "us")
+    {
+      title = "Maximum velocity";
+    }
+    if (options.contains("source"))
+    {
+      title += " - " + options.get("source");
+    }
+
+    Grid grid;
+    fs::path vmaxGridPath(vmaxPath);
+    fs::path vmaxPlotPath = vmaxGridPath;
+
+    if (loadGrid(grid, vmaxGridPath, options, true) == false)
+    {
+      cerr << "Unable to load grid from " << vmaxGridPath.string() << endl;
+      return fs::path();
+    }
+
+    auto [x0, y0, xMax, yMax] = grid.extents();
+    auto [dxDeg, dyDeg] = grid.resolutionDegrees();
+    auto [dxM, dyM] = grid.resolutionMeters();
+    auto [rows, columns] = grid.dimensions();
+
+    bool tempVmaxGridCreated = false;
+    if (!options.get("vmax_nodata").empty())
+    {
+      float noDataValue = std::stof(options.get("vmax_nodata"));
+
+      for (size_t i = 0; i < rows; i++)
+      {
+        for (size_t j = 0; j < columns; j++)
+        {
+          if (grid(i, j) == noDataValue || grid(i, j) <= 0.0f)
+          {
+            grid(i, j) = 100.0f;
+          }
+        }
+      }
+
+      grid.setNoData(100.0f);
+
+      cout << "Replacing " << noDataValue << " with nodata" << endl;
+      fs::path tempVmaxGridPath = fs::temp_directory_path() / (vmaxGridPath.stem().string() + "_nodata_fixed.bil");
+      if (geo::SaveGrid(grid, tempVmaxGridPath.string(), GridFormat::ESRI_FLOAT) == geo::geoStatus::FAILURE)
+      {
+        cerr << "Unable to save temporary grid to " << tempVmaxGridPath.string() << endl;
+        return fs::path();
+      }
+      vmaxPlotPath = tempVmaxGridPath;
+      tempVmaxGridCreated = true;
+    }
+
+    fs::path outputPath = vmaxGridPath.replace_extension(".png");
+
+    string fileExt = ".bat";
+#ifdef __linux__
+    fileExt = ".sh";
+#endif
+
+    fs::path scriptPath = fs::temp_directory_path() / (fs::path(vmaxPlotPath).stem().string() + fileExt);
+    fs::path legendFile = fs::temp_directory_path() / "vmax_legend.txt";
+    fs::path bathymetryPalettePath = fs::temp_directory_path() / "bathymetry_palette.cpt";
+    fs::path vmaxPalettePath = fs::temp_directory_path() / "vmax_palette.cpt";
+
+    std::ofstream scriptOfs(scriptPath.string());
+
+#ifdef WIN32
+    scriptOfs << "@echo off" << std::endl;
+    scriptOfs << ":: Auto-generated batch file to plot vmax grid " << vmaxPlotPath << std::endl;
+    scriptOfs << "set \"GMT_VERBOSE=quiet\"" << std::endl;
+    scriptOfs << "set \"GMT_END_SHOW=off\"" << std::endl;
+    scriptOfs << "set \"GMT_LANGUAGE=" << langUpper << "\"" << std::endl;
+#elif __linux__
+    scriptOfs << "#!/bin/bash" << std::endl;
+    scriptOfs << "export GMT_VERBOSE=quiet" << std::endl;
+    scriptOfs << "export GMT_END_SHOW=off" << std::endl;
+    scriptOfs << "export GMT_LANGUAGE=" << langUpper << std::endl;
+    scriptOfs << "mkdir -p \"/tmp/gmt_user_$$\"" << std::endl;
+    scriptOfs << "export GMT_USERDIR=\"/tmp/gmt_user_$$\"" << std::endl;
+#endif
+
+    if (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1")
+    {
+      scriptOfs << "gmt makecpt -Cglobe -I -D > \"" << bathymetryPalettePath.string() << "\" " << std::endl;
+    }
+    else
+    {
+      scriptOfs << "gmt makecpt -Cglobe -D > \"" << bathymetryPalettePath.string() << "\" " << std::endl;
+    }
+
+    // Auto-scale the max-wave color progression to the vmax data range
+    scriptOfs << "gmt grd2cpt \"" << vmaxPlotPath.string() << "\" -C\"" << maxPalettePath.string() << "\" -Z -D > \"" << vmaxPalettePath.string() << "\"" << std::endl;
+
+    string extentStr = std::to_string(x0) + "/" + std::to_string(xMax) + "/" + std::to_string(y0) + "/" + std::to_string(yMax);
+
+    scriptOfs << "gmt begin \"" << vmaxGridPath.replace_extension("").string() << "\" png E600" << std::endl;
+
+    scriptOfs << "gmt set MAP_FRAME_TYPE fancy+" << std::endl;
+    scriptOfs << "gmt set MAP_FRAME_WIDTH 2.5p" << std::endl;
+    scriptOfs << "gmt set GMT_LANGUAGE " << langUpper << std::endl;
+    scriptOfs << "gmt set PS_LINE_CAP round" << std::endl;
+    scriptOfs << "gmt set PS_LINE_JOIN round" << std::endl;
+
+    // Skip legend
+    // scriptOfs << "gmt legend " << legendFile << " -Rd -JX12c/9c -DjLT -F --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_TITLE=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
+
+    // Skip bathymetry plot
+    // scriptOfs << "gmt grdimage -JM10c -R" << extentStr << " \"" << gridPath << "\"  -C\"" << bathymetryPalettePath.string() << "\" -Y11c -Vq" << std::endl;
+
+    scriptOfs << "gmt grdimage -JM10c  -R" << extentStr << " \"" << vmaxPlotPath.string() << "\" -C\"" << vmaxPalettePath.string() << "\" -Q -Vq" << std::endl;
+
+    scriptOfs << "gmt basemap -JM10c -R" << extentStr << " -Baf -BWSen+t\"" << title << "\" --FONT_TITLE=14p,Helvetica --FONT_ANNOT=6p,Helvetica -Vq" << std::endl;
+
+    double gridLengthX = columns * dxM;
+    double gridLengthY = rows * dyM;
+    double gridLengthKm = std::min(gridLengthX, gridLengthY) / 1000.0;
+
+    float scaleLengthKm = trunc(gridLengthKm / 5.0f);
+    if (scaleLengthKm < 1)
+    {
+      scaleLengthKm = 0.1;
+    }
+    if (scaleLengthKm < 1)
+    {
+      scaleLengthKm = (scaleLengthKm < 0.5f) ? 0.5f : 1.0f;
+    }
+    else if (scaleLengthKm < 10)
+    {
+      scaleLengthKm = round(scaleLengthKm);
+    }
+    else if (scaleLengthKm < 100)
+    {
+      scaleLengthKm = round(scaleLengthKm / 5.0f) * 5.0f;
+    }
+    else if (scaleLengthKm < 1000)
+    {
+      scaleLengthKm = round(scaleLengthKm / 50.0f) * 50.0f;
+    }
+    else
+    {
+      scaleLengthKm = round(scaleLengthKm / 500.0f) * 500.0f;
+    }
+
+    // Draw coast lines
+    // If outline option is set, plot outline file instead of coastlines
+
+    // Outline is expected to be in the same directory as the grid file.
+    // The outline option defines the filename of the outline file. If the outline option is not set, the default filename is "contour.gmt".
+    fs::path outlinePath(gridPath);
+
+    string outlineFilename = options.get("outline");
+
+    if (outlineFilename.empty())
+    {
+      outlineFilename = "contour.gmt";
+    }
+
+    outlinePath.replace_filename(outlineFilename);
+
+    // Check if outline file exists
+    if (fs::exists(outlinePath))
+    {      
+        cout << "Using outline file: " << fs::canonical(outlinePath).string() << endl;
+        // If file is binary plot with -bi2f
+        if (Strings::tolower(outlinePath.extension().string()) == ".bin" || Strings::tolower(outlinePath.extension().string()) == ".bf2")
+        {
+          scriptOfs << "gmt plot \"" << fs::canonical(outlinePath).string() << "\" -bi2f -Wthin,dimgray --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
+        }
+        else
+        {
+          // Plot as text file, add -J and -R to match the grid
+          scriptOfs << "gmt plot -JM10c -R" << extentStr << " \"" << fs::canonical(outlinePath).string() << "\" -Wthin,dimgray --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
+        }      
+    }
+    else if (plotCoast)
+    {
+      // Fall back to coastlines and country borders
+      // -W shorelines, -N1 country borders
+      scriptOfs << "gmt coast -JM10c -R" << extentStr << " -D" << coastRes << " -N1/0.01p,gray77 -Wthinnest,dimgray  --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
+    }
+
+    scriptOfs << "gmt basemap -JM10c -R" << extentStr << " -TdjLT+w30p+f2+l,,,,+o5p/5p -LJBC+c" << y0 << "+l+f+w" << scaleLengthKm << "k+o0p/30p --FONT_TITLE=6p,Helvetica --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
+
+    string velStr = "Vel. (m/s)";
+    if (lang == "us")
+    {
+      velStr = "Vel. (m/s)";
+    }
+
+    scriptOfs << "gmt colorbar  -JM10c -R" << extentStr << " -DJMR+w6c/0.25c+o20p/0p+v -C\"" << vmaxPalettePath.string() << "\" -Bafg -Baf+l\"" << velStr << "\" -Bxa1f1 -B+u\" m/s\" --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
+
+    std::ofstream legendOfs(legendFile.string());
+    if (legendOfs.is_open() == false)
+    {
+      cerr << "Unable to create legend file " << legendFile.string() << endl;
+      scriptOfs.close();
+      fs::remove(scriptPath);
+      return fs::path();
+    }
+    legendOfs << "N 1" << endl;
+    legendOfs << "L - L Velocidad max. (m/s)" << endl;
+    if (lang == "us")
+    {
+      legendOfs << "L - L Max. velocity (m/s)" << endl;
+    }
+    legendOfs.close();
+
+    scriptOfs << "gmt end" << std::endl;
+
+#ifdef __linux__
+    scriptOfs << "rm -rf \"/tmp/gmt_user_$$\"" << std::endl;
+#endif
+
+#ifndef _DEBUG
+    std::stringstream removeFilesSs;
+#ifdef WIN32
+    if (tempVmaxGridCreated)
+    {
+      removeFilesSs << "del \"" << vmaxPlotPath.string() << "\"" << std::endl;
+    }
+    removeFilesSs << "del \"" << vmaxPalettePath.string() << "\"" << std::endl;
+    removeFilesSs << "del \"" << maxPalettePath.string() << "\"" << std::endl;
+    removeFilesSs << "del \"" << legendFile.string() << "\"" << std::endl;
+#elif __linux__
+    if (tempVmaxGridCreated)
+    {
+      removeFilesSs << "rm \"" << vmaxPlotPath.string() << "\"" << std::endl;
+    }
+    removeFilesSs << "rm \"" << vmaxPalettePath.string() << "\"" << std::endl;
+    removeFilesSs << "rm \"" << maxPalettePath.string() << "\"" << std::endl;
+    removeFilesSs << "rm \"" << legendFile.string() << "\"" << std::endl;
+#endif
+    scriptOfs << removeFilesSs.str();
+#endif
+
+    scriptOfs.close();
+
+#ifdef __linux__
+    fs::permissions(scriptPath, fs::perms::owner_exec, fs::perm_options::add);
+#endif
+
 #ifdef _DEBUG
     cout << scriptPath.string() << endl;
 #endif
@@ -2197,42 +2584,45 @@ namespace TsunamiPlot
       waveDataPath = fs::path(options.get("wave_data")).make_preferred();
     }
 
-    // Search for wave data in output path if not found in current path
-    if (!fs::exists(waveDataPath) && fs::exists(outputPath / waveDataPath))
+    if (!waveDataPath.empty())
     {
-      waveDataPath = (outputPath / waveDataPath).make_preferred();
+      if (!fs::exists(waveDataPath) && fs::exists(outputPath / waveDataPath))
+      {
+        waveDataPath = (outputPath / waveDataPath).make_preferred();
+      }
+      if (!fs::exists(waveDataPath))
+      {
+        cerr << "Wave data file " << waveDataPath.string() << " not found, plotting without gauge table." << endl;
+        waveDataPath = fs::path();
+      }
+      else
+      {
+        waveDataPath = fs::canonical(waveDataPath);
+      }
     }
 
-    if (!fs::exists(waveDataPath))
+    // Get gauge path -- optional; grids without outpoints produce a map with no gauge markers
+    if (options.contains("gauge") && !options.get("gauge").empty())
     {
-      cerr << "Wave data file " << waveDataPath.string() << " does not exist." << endl;
-      return;
+      gaugePath = fs::path(options.get("gauge")).make_preferred();
+      if (!fs::exists(gaugePath) && fs::exists(inputPath / gaugePath))
+      {
+        gaugePath = (inputPath / gaugePath).make_preferred();
+      }
+      else if (!fs::exists(gaugePath) && fs::exists(outputPath / gaugePath))
+      {
+        gaugePath = (outputPath / gaugePath).make_preferred();
+      }
+      if (!fs::exists(gaugePath))
+      {
+        cerr << "Gauges file " << gaugePath.string() << " not found, plotting without gauges." << endl;
+        gaugePath = fs::path();
+      }
+      else
+      {
+        gaugePath = fs::canonical(gaugePath);
+      }
     }
-
-    // Get cannonical route to wave data path
-    waveDataPath = fs::canonical(waveDataPath);
-
-    // Get gauge path
-    gaugePath = fs::path(options.get("gauge")).make_preferred();
-
-    // Check gauge path existence
-    if (!fs::exists(gaugePath) && fs::exists(inputPath / gaugePath))
-    {
-      gaugePath = (inputPath / gaugePath).make_preferred();
-    }
-    else if (!fs::exists(gaugePath) && fs::exists(outputPath / gaugePath))
-    {
-      gaugePath = (outputPath / gaugePath).make_preferred();
-    }
-
-    if (!fs::exists(gaugePath))
-    {
-      cerr << "Gauges file " << gaugePath.string() << " does not exist." << endl;
-      return;
-    }
-
-    // Get cannonical route to gauge path
-    gaugePath = fs::canonical(gaugePath);
 
     // Create bat or sh file depending on OS
     fs::path scriptPath = createMaxPlotScript(gridPath.string(), zMaxPath.string(), waveDataPath.string(), gaugePath.string(), options);
@@ -2527,6 +2917,361 @@ namespace TsunamiPlot
       return;
     }
     cout << "Inundation " << inundationPath.replace_extension("png").string() << std::endl;
+  }
+
+  void plotVmax(geo::Options &options)
+  {
+    using geo::GridFormat;
+
+    fs::path gridPath;
+    fs::path vmaxPath;
+
+    auto [inputPath, outputPath] = getPaths(options);
+
+    if (!inputPath.empty() && !outputPath.empty() && outputPath.is_relative())
+    {
+      outputPath = (inputPath / outputPath).make_preferred();
+    }
+
+    GridFormat gridOutputFormat{GridFormat::ESRI_FLOAT};
+    if (options.contains("format"))
+    {
+      GridFormat suggestedFormat = geo::getFormat(options.get("format"));
+      if (suggestedFormat != GridFormat::UNKNOWN)
+      {
+        gridOutputFormat = suggestedFormat;
+      }
+    }
+
+    gridPath = fs::path(options.get("grid"));
+    if (!fs::exists(gridPath) && fs::exists(inputPath / gridPath))
+    {
+      gridPath = (inputPath / gridPath).make_preferred();
+    }
+    else if (!fs::exists(gridPath) && fs::exists(outputPath / gridPath))
+    {
+      gridPath = (outputPath / gridPath).make_preferred();
+    }
+
+    if (!fs::exists(gridPath))
+    {
+      cerr << "Grid " << gridPath.string() << " does not exist." << endl;
+      return;
+    }
+
+    gridPath = fs::canonical(gridPath);
+
+    Grid grid;
+    if (loadGrid(grid, gridPath, options, true) == false)
+    {
+      cerr << "Unable to load grid from " << gridPath.string() << endl;
+      return;
+    }
+
+    vmaxPath = fs::path("vmax" + geo::gridExtension(gridOutputFormat));
+    if (options.contains("vmax"))
+    {
+      vmaxPath = options.get("vmax");
+    }
+
+    if (!fs::exists(vmaxPath) && fs::exists(outputPath / vmaxPath))
+    {
+      vmaxPath = (outputPath / vmaxPath).make_preferred();
+    }
+
+    if (!fs::exists(vmaxPath))
+    {
+      cerr << "Vmax grid " << vmaxPath.string() << " does not exist." << endl;
+      return;
+    }
+
+    vmaxPath = fs::canonical(vmaxPath);
+
+    cout << "Plotting vmax grid " << vmaxPath.string() << " ..." << std::endl;
+
+    Grid vmaxGrid;
+    if (loadGrid(vmaxGrid, vmaxPath, options, true) == false)
+    {
+      cerr << "Unable to load vmax grid from " << vmaxPath.string() << endl;
+      return;
+    }
+
+    fs::path scriptPath = createVmaxPlotScript(vmaxPath.string(), gridPath.string(), options);
+
+    int exitCode = executeCommand(scriptPath.string(), true);
+
+#ifndef _DEBUG
+    try
+    {
+      fs::remove(scriptPath);
+    }
+    catch (fs::filesystem_error &e)
+    {
+      cerr << "Error removing temporary script file: " << e.what() << endl;
+    }
+#endif
+
+    if (exitCode != 0)
+    {
+      cerr << "Plot script failed with exit code " << exitCode << endl;
+      return;
+    }
+    cout << "Vmax " << vmaxPath.replace_extension("png").string() << std::endl;
+  }
+
+  fs::path createPropagationPlotScript(string gridPath, string propPath, geo::Options &options)
+  {
+    string lang = Strings::tolower(options.get("lang"));
+    if (!lang.length()) lang = "es";
+    string langUpper = Strings::toupper(static_cast<string>(lang));
+
+    bool plotCoast = Strings::tolower(options.get("plot_coast")) != "false";
+    string coastRes = options.get("coast_resolution");
+    if (coastRes.size() != 1) coastRes = "f";
+
+    string title = (lang == "us") ? "Tsunami Travel Time" : "Tiempo de Propagacion del Tsunami";
+    if (options.contains("source"))
+      title += " - " + options.get("source");
+
+    int maxTime = 40;
+    if (!options.get("time").empty())
+    {
+      try { maxTime = std::stoi(options.get("time")); }
+      catch (...) {}
+    }
+
+    Grid grid;
+    fs::path propGridPath(propPath);
+    fs::path propPlotPath = propGridPath;
+
+    if (loadGrid(grid, propGridPath, options, true) == false)
+    {
+      cerr << "Unable to load propagation grid from " << propGridPath.string() << endl;
+      return fs::path();
+    }
+
+    auto [x0, y0, xMax, yMax] = grid.extents();
+    auto [dxDeg, dyDeg] = grid.resolutionDegrees();
+    auto [dxM, dyM] = grid.resolutionMeters();
+    auto [rows, columns] = grid.dimensions();
+
+    const float TARGET_MAP_H = 20.0f;
+    const int MIN_MAP_W = 15;
+    float lon_span = (float)(columns * dxDeg);
+    float lat_span = (float)(rows * dyDeg);
+    int map_w_i = (lat_span > 0.0f)
+                    ? std::max(MIN_MAP_W, (int)std::round(TARGET_MAP_H * (lon_span / lat_span)))
+                    : MIN_MAP_W;
+    string map_w_str = std::to_string(map_w_i) + "c";
+
+    string fileExt = ".bat";
+#ifdef __linux__
+    fileExt = ".sh";
+#endif
+    fs::path scriptPath = fs::temp_directory_path() / (fs::path(propPath).stem().string() + fileExt);
+    std::ofstream scriptOfs(scriptPath.string());
+
+    fs::path propPalettePath = fs::temp_directory_path() / "prop.cpt";
+
+    string extentStr = std::to_string(x0) + "/" + std::to_string(xMax) + "/" + std::to_string(y0) + "/" + std::to_string(yMax);
+
+#ifdef WIN32
+    scriptOfs << "@echo off" << endl;
+    scriptOfs << "set \"GMT_END_SHOW=off\"" << endl;
+    scriptOfs << "set \"GMT_LANGUAGE=" << langUpper << "\"" << endl;
+#elif __linux__
+    scriptOfs << "#!/bin/bash" << endl;
+    scriptOfs << "export GMT_VERBOSE=quiet" << endl;
+    scriptOfs << "export GMT_END_SHOW=off" << endl;
+    scriptOfs << "export GMT_LANGUAGE=" << langUpper << endl;
+    scriptOfs << "mkdir -p \"/tmp/gmt_user_$$\"" << endl;
+    scriptOfs << "export GMT_USERDIR=\"/tmp/gmt_user_$$\"" << endl;
+#endif
+
+    // CPT: jet inverted (red=near/source, blue=far), scaled 0..maxTime hours, 1h steps.
+    // -I inverts the palette. --COLOR_NAN=lightgray: land is overwritten white by coast -Gwhite,
+    // leaving unreached ocean as lightgray -- three distinct visual categories.
+    scriptOfs << "gmt makecpt -Cjet -I -T0/" << maxTime << "/1 -Z --COLOR_NAN=lightgray > \"" << propPalettePath.string() << "\"" << endl;
+
+    scriptOfs << "gmt begin \"" << propGridPath.replace_extension("").string() << "\" png E600" << endl;
+
+    scriptOfs << "gmt set MAP_FRAME_TYPE fancy+" << endl;
+    scriptOfs << "gmt set MAP_FRAME_WIDTH 2.5p" << endl;
+    scriptOfs << "gmt set GMT_LANGUAGE " << langUpper << endl;
+    scriptOfs << "gmt set PS_LINE_CAP round" << endl;
+    scriptOfs << "gmt set PS_LINE_JOIN round" << endl;
+
+    // Propagation time raster
+    scriptOfs << "gmt grdimage -JM" << map_w_str << " -R" << extentStr
+              << " \"" << propPlotPath.string() << "\" -C\"" << propPalettePath.string()
+              << "\" -Qwhite -Vq" << endl;
+
+    // Scale bar length
+    double gridLengthKm = std::min((double)(columns * dxM), (double)(rows * dyM)) / 1000.0;
+    float scaleLengthKm = trunc(gridLengthKm / 5.0f);
+    if (scaleLengthKm < 1) scaleLengthKm = 0.1f;
+    if (scaleLengthKm < 1)      scaleLengthKm = (scaleLengthKm < 0.5f) ? 0.5f : 1.0f;
+    else if (scaleLengthKm < 10)   scaleLengthKm = round(scaleLengthKm);
+    else if (scaleLengthKm < 100)  scaleLengthKm = round(scaleLengthKm / 5.0f) * 5.0f;
+    else if (scaleLengthKm < 1000) scaleLengthKm = round(scaleLengthKm / 50.0f) * 50.0f;
+    else                           scaleLengthKm = round(scaleLengthKm / 500.0f) * 500.0f;
+
+    // Coast or outline drawn immediately after raster so land covers nodata cells.
+    // -Gwhite fills land; coastlines and borders drawn on top.
+    fs::path outlinePath(gridPath);
+    string outlineFilename = options.get("outline");
+    if (outlineFilename.empty()) outlineFilename = "contour.gmt";
+    outlinePath.replace_filename(outlineFilename);
+
+    if (fs::exists(outlinePath))
+    {
+      if (Strings::tolower(outlinePath.extension().string()) == ".bin" ||
+          Strings::tolower(outlinePath.extension().string()) == ".bf2")
+        scriptOfs << "gmt plot \"" << fs::canonical(outlinePath).string() << "\" -bi2f -Wthin,dimgray -Vq" << endl;
+      else
+        scriptOfs << "gmt plot -JM" << map_w_str << " -R" << extentStr
+                  << " \"" << fs::canonical(outlinePath).string() << "\" -Wthin,dimgray -Vq" << endl;
+    }
+    else if (plotCoast)
+    {
+      scriptOfs << "gmt coast -JM" << map_w_str << " -R" << extentStr
+                << " -D" << coastRes << " -Gwhite -N1/0.01p,gray77 -Wthinnest,dimgray"
+                << " --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << endl;
+    }
+
+    // Isolines every 2h, labeled every 4h with "h" suffix and bordered white box.
+    // Dashed pen for minor contours, slightly thicker for annotated ones.
+    scriptOfs << "gmt grdcontour \"" << propPlotPath.string() << "\" -JM" << map_w_str
+              << " -R" << extentStr
+              << " -C2 -A4+f8p,black+gwhite+p0.3p,gray40+uh -Wcthin,gray30,- -Wa0.8p,gray20,- -Vq" << endl;
+
+    // Source star marker: parsed from "fault = single;lon lat depth ..."
+    {
+      string faultStr = options.get("fault");
+      size_t sep = faultStr.find(';');
+      if (sep != string::npos)
+      {
+        std::istringstream iss(faultStr.substr(sep + 1));
+        float faultLon, faultLat;
+        if (iss >> faultLon >> faultLat)
+        {
+          scriptOfs << "echo " << faultLon << " " << faultLat
+                    << " | gmt plot -Sa0.7c -Gyellow -W1.5p,black -Vq" << endl;
+        }
+      }
+    }
+
+    // Frame and title
+    scriptOfs << "gmt basemap -JM" << map_w_str << " -R" << extentStr
+              << " -Baf -BWSen+t\"" << title << "\" --FONT_TITLE=14p,Helvetica --FONT_ANNOT=6p,Helvetica -Vq" << endl;
+
+    // Directional rose and scale bar
+    scriptOfs << "gmt basemap -JM" << map_w_str << " -R" << extentStr
+              << " -TdjLT+w30p+f2+l,,,,+o5p/5p -LJBC+c" << y0
+              << "+l+f+w" << scaleLengthKm << "k+o0p/30p"
+              << " --FONT_TITLE=8p,Helvetica --FONT_ANNOT_PRIMARY=8p,Helvetica --FONT_LABEL=8p,Helvetica -Vq" << endl;
+
+    // Colorbar: travel time in hours
+    string timeLabel = (lang == "us") ? "Travel time (h)" : "Tiempo de llegada (h)";
+    string cbar_h_str = std::to_string((int)std::round(TARGET_MAP_H * 0.70f)) + "c";
+    scriptOfs << "gmt colorbar -JM" << map_w_str << " -R" << extentStr
+              << " -DJMR+w" << cbar_h_str << "/0.4c+o20p/0p+v -C\"" << propPalettePath.string()
+              << "\" -Baf+l\"" << timeLabel << "\" --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << endl;
+
+    scriptOfs << "gmt end" << endl;
+
+#ifdef __linux__
+    scriptOfs << "rm -rf \"/tmp/gmt_user_$$\"" << endl;
+    scriptOfs << "rm -f \"" << propPalettePath.string() << "\"" << endl;
+#endif
+
+    scriptOfs.close();
+
+#ifdef __linux__
+    fs::permissions(scriptPath, fs::perms::owner_exec, fs::perm_options::add);
+#endif
+
+    return scriptPath;
+  }
+
+  void plotPropagation(geo::Options &options)
+  {
+    using geo::GridFormat;
+
+    fs::path gridPath;
+    fs::path propPath;
+
+    auto [inputPath, outputPath] = getPaths(options);
+
+    if (!inputPath.empty() && !outputPath.empty() && outputPath.is_relative())
+      outputPath = (inputPath / outputPath).make_preferred();
+
+    GridFormat gridOutputFormat{GridFormat::ESRI_FLOAT};
+    if (options.contains("format"))
+    {
+      GridFormat suggestedFormat = geo::getFormat(options.get("format"));
+      if (suggestedFormat != GridFormat::UNKNOWN)
+        gridOutputFormat = suggestedFormat;
+    }
+
+    gridPath = fs::path(options.get("grid"));
+    if (!fs::exists(gridPath) && fs::exists(inputPath / gridPath))
+      gridPath = (inputPath / gridPath).make_preferred();
+    else if (!fs::exists(gridPath) && fs::exists(outputPath / gridPath))
+      gridPath = (outputPath / gridPath).make_preferred();
+
+    if (!fs::exists(gridPath))
+    {
+      cerr << "Grid " << gridPath.string() << " does not exist." << endl;
+      return;
+    }
+    gridPath = fs::canonical(gridPath);
+
+    Grid grid;
+    if (loadGrid(grid, gridPath, options, true) == false)
+    {
+      cerr << "Unable to load grid from " << gridPath.string() << endl;
+      return;
+    }
+
+    propPath = fs::path("prop" + geo::gridExtension(gridOutputFormat));
+    if (options.contains("prop"))
+      propPath = options.get("prop");
+
+    if (!fs::exists(propPath) && fs::exists(outputPath / propPath))
+      propPath = (outputPath / propPath).make_preferred();
+
+    if (!fs::exists(propPath))
+    {
+      cerr << "Propagation grid " << propPath.string() << " does not exist." << endl;
+      return;
+    }
+    propPath = fs::canonical(propPath);
+
+    cout << "Plotting propagation grid " << propPath.string() << " ..." << endl;
+
+    Grid propGrid;
+    if (loadGrid(propGrid, propPath, options, true) == false)
+    {
+      cerr << "Unable to load propagation grid from " << propPath.string() << endl;
+      return;
+    }
+
+    fs::path scriptPath = createPropagationPlotScript(gridPath.string(), propPath.string(), options);
+
+    int exitCode = executeCommand(scriptPath.string(), true);
+
+#ifndef _DEBUG
+    try { fs::remove(scriptPath); }
+    catch (fs::filesystem_error &e) { cerr << "Error removing temporary script file: " << e.what() << endl; }
+#endif
+
+    if (exitCode != 0)
+    {
+      cerr << "Plot script failed with exit code " << exitCode << endl;
+      return;
+    }
+    cout << "Propagation " << propPath.replace_extension("png").string() << endl;
   }
 
 }

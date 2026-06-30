@@ -88,6 +88,10 @@ int main(int argc, char * argv[]) {
     plotWaveProfile(options);
   } else if (plotType == "plot-inund") {
     plotInundation(options);
+  } else if (plotType == "plot-vmax") {
+    plotVmax(options);
+  } else if (plotType == "plot-prop") {
+    plotPropagation(options);
   } else {
     usage(argv[0]);
     return 1;
@@ -143,6 +147,16 @@ void usage(char * program) {
   cout << "                         inund=<path to inundation grid>" << endl;
   cout << "                         grid=<path to bathymetry>" << endl;
   cout << "                         inund_nodata=<value> sets the specified value to Nodata (100) in the inundation grid" << endl;
+  cout << endl;
+  cout << "  plot-vmax <options>    Plot maximum current velocity grid" << endl;
+  cout << "                         vmax=<path to vmax grid> (default: vmax.bil)" << endl;
+  cout << "                         grid=<path to bathymetry>" << endl;
+  cout << endl;
+  cout << "  plot-prop <options>    Plot tsunami travel-time propagation grid with isolines every 2h" << endl;
+  cout << "                         prop=<path to propagation grid> (default: prop.bil)" << endl;
+  cout << "                         grid=<path to bathymetry>" << endl;
+  cout << "                         time=<max_hours>    Max travel time for colorscale (default: 40)" << endl;
+  cout << "                         fault=single;<lon> <lat> <depth> ...  Fault location for source star marker" << endl;
   cout << endl;
   cout << "Note on text grids: " << endl;
   cout << "  For text grids, the following options must be used to specify the format:" << endl;

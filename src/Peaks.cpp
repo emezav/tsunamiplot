@@ -199,8 +199,8 @@ void Peaks::findPeaks(vector<float> x0, vector<int>& peakInds)
             ii = 1;
 
         float maxPeaks = ceil((float)len / 2.0);
-        vector<int> peakLoc(maxPeaks, 0);
-        vector<float> peakMag(maxPeaks, 0.0);
+        vector<int> peakLoc(maxPeaks + 1, 0);
+        vector<float> peakMag(maxPeaks + 1, 0.0);
         int cInd = 1;
         int tempLoc;
 

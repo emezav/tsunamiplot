@@ -9,7 +9,6 @@
 #define TSUNAMIPLOT_H
 
 #include "geo.h"
-
 namespace TsunamiPlot
 {
 
@@ -36,6 +35,18 @@ namespace TsunamiPlot
    * @param options Geo options
    */
   void plotInundation(geo::Options &options);
+
+  /**
+   * @brief Plot maximum velocity data with auto-scaled color palette
+   * @param options Geo options
+   */
+  void plotVmax(geo::Options &options);
+
+  /**
+   * @brief Plot tsunami travel-time propagation grid with isolines every 2h
+   * @param options Geo options
+   */
+  void plotPropagation(geo::Options &options);
 }
 
 #endif // TSUNAMIPLOT_H
