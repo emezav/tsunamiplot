@@ -953,7 +953,18 @@ namespace TsunamiPlot
     scriptOfs << "export GMT_USERDIR=\"/tmp/gmt_user_$$\"" << std::endl;
 #endif
 
-    string satellitePath = options.get("satellite");
+    // Resolve satellite filename relative to the grid directory (same as outline logic).
+    string satelliteFilename = options.get("satellite");
+    string satellitePath;
+    if (!satelliteFilename.empty())
+    {
+        fs::path satResolved(gridPath);
+        satResolved.replace_filename(satelliteFilename);
+        if (fs::exists(satResolved))
+            satellitePath = fs::canonical(satResolved).string();
+        else
+            std::cerr << "Warning: satellite image not found: " << satResolved.string() << std::endl;
+    }
     bool showBathy = Strings::tolower(options.get("show_bathy")) == "true";
     int waveTrans = 0;
     try { if (!options.get("wave_transparency").empty()) waveTrans = std::stoi(options.get("wave_transparency")); } catch (...) {}
@@ -1861,7 +1872,18 @@ namespace TsunamiPlot
     scriptOfs << "export GMT_USERDIR=\"/tmp/gmt_user_$$\"" << std::endl;
 #endif
 
-    string satellitePath = options.get("satellite");
+    // Resolve satellite filename relative to the grid directory (same as outline logic).
+    string satelliteFilename = options.get("satellite");
+    string satellitePath;
+    if (!satelliteFilename.empty())
+    {
+        fs::path satResolved(gridPath);
+        satResolved.replace_filename(satelliteFilename);
+        if (fs::exists(satResolved))
+            satellitePath = fs::canonical(satResolved).string();
+        else
+            std::cerr << "Warning: satellite image not found: " << satResolved.string() << std::endl;
+    }
     bool showBathy = Strings::tolower(options.get("show_bathy")) == "true";
     int waveTrans = 0;
     try { if (!options.get("wave_transparency").empty()) waveTrans = std::stoi(options.get("wave_transparency")); } catch (...) {}
@@ -2198,7 +2220,18 @@ namespace TsunamiPlot
     scriptOfs << "export GMT_USERDIR=\"/tmp/gmt_user_$$\"" << std::endl;
 #endif
 
-    string satellitePath = options.get("satellite");
+    // Resolve satellite filename relative to the grid directory (same as outline logic).
+    string satelliteFilename = options.get("satellite");
+    string satellitePath;
+    if (!satelliteFilename.empty())
+    {
+        fs::path satResolved(gridPath);
+        satResolved.replace_filename(satelliteFilename);
+        if (fs::exists(satResolved))
+            satellitePath = fs::canonical(satResolved).string();
+        else
+            std::cerr << "Warning: satellite image not found: " << satResolved.string() << std::endl;
+    }
     bool showBathy = Strings::tolower(options.get("show_bathy")) == "true";
     int waveTrans = 0;
     try { if (!options.get("wave_transparency").empty()) waveTrans = std::stoi(options.get("wave_transparency")); } catch (...) {}

@@ -117,9 +117,9 @@ void usage(char * program) {
 
   cout << endl;
   cout << "Background options (plot-max, plot-inund, plot-vmax):" << endl;
-  cout << "  satellite=<path>         WGS84 Byte RGB GeoTIFF used as background layer" << endl;
-  cout << "                           Takes precedence over show_bathy. Must be pre-converted" << endl;
-  cout << "                           (gdalwarp -t_srs EPSG:4326 + gdal_translate -ot Byte)." << endl;
+  cout << "  satellite=<filename>     Filename of a WGS84 Byte RGB GeoTIFF in the same directory" << endl;
+  cout << "                           as the grid file. Takes precedence over show_bathy." << endl;
+  cout << "                           Must be pre-converted (gdalwarp + gdal_translate -ot Byte)." << endl;
   cout << "  show_bathy=<true|false>  Show bathymetry grid as gray background (default: false)." << endl;
   cout << "                           Uses grd2cpt -Cgray scaled to the grid data range." << endl;
   cout << "                           Ignored if satellite is set." << endl;
