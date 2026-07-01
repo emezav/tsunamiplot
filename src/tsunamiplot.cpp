@@ -337,8 +337,9 @@ namespace TsunamiPlot
     float b3 = maxZ * 0.40f;
     float b4 = maxZ * 0.60f;
 
-    ofs << "# Max CPT 0-" << maxZ << "m -- darkblue->blue->yellow->orange->red->darkred\n"
-        << "0 darkblue " << b1 << " blue L\n"
+    ofs << "# Max CPT 0-" << maxZ << "m -- white(0)->darkblue->blue->yellow->orange->red->darkred\n"
+        << "0 white 0.01 darkblue L\n"
+        << "0.01 darkblue " << b1 << " blue L\n"
         << b1 << " blue "   << b2 << " yellow L\n"
         << b2 << " yellow " << b3 << " orange L\n"
         << b3 << " orange " << b4 << " red L\n"
@@ -389,7 +390,7 @@ namespace TsunamiPlot
           "0.2 yellow 0.4 orange L\n"
           "0.4 orange 0.6 red L\n"
           "0.6 red 1.0 darkred B\n"
-          "B black\n" // Background color
+          "B white\n" // Background color
           "F white\n" // Foreground color
           "N white\n"; // NaN color
 
@@ -952,16 +953,18 @@ namespace TsunamiPlot
     scriptOfs << "export GMT_USERDIR=\"/tmp/gmt_user_$$\"" << std::endl;
 #endif
 
-    // Create a CPT file for bathymetry using the globe base palette
-    // Bathymetry grid must be positive for land and negative for sea, so only invert the palette if requested
-    if (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1")
+    string satellitePath = options.get("satellite");
+    bool showBathy = Strings::tolower(options.get("show_bathy")) == "true";
+    int waveTrans = 0;
+    try { if (!options.get("wave_transparency").empty()) waveTrans = std::stoi(options.get("wave_transparency")); } catch (...) {}
+    string waveTransArg = (waveTrans > 0) ? " -t" + std::to_string(waveTrans) : "";
+
+    if (showBathy && satellitePath.empty())
     {
-      // Invert the globe palette for bathymetry
-      scriptOfs << "gmt makecpt -Cglobe -I -D > \"" << bathymetryPalettePath.string() << "\" " << std::endl;
-    }
-    else
-    {
-      scriptOfs << "gmt makecpt -Cglobe -D > \"" << bathymetryPalettePath.string() << "\" " << std::endl;
+      if (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1")
+        scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray -I -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+      else
+        scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
     }
 
     // Create extent string
@@ -999,11 +1002,17 @@ namespace TsunamiPlot
     // -- shift Y up to leave room for the legend below
     string yUpArg = legendActive ? (" -Y" + std::to_string(yUp) + "c") : "";
 
-    // Bathymetry layer
-    // scriptOfs << "gmt grdimage -JM" << map_w_str << " -R" << extentStr << " \"" << gridPath << "\"  -C\"" << bathymetryPalettePath.string() << "\"" << yUpArg << " -t70 -Vq" << std::endl;
+    if (!satellitePath.empty())
+    {
+      scriptOfs << "gmt grdimage -JM" << map_w_str << " -R" << extentStr << " \"" << satellitePath << "\"" << yUpArg << " -Vq" << std::endl;
+    }
+    else if (showBathy)
+    {
+      scriptOfs << "gmt grdimage -JM" << map_w_str << " -R" << extentStr << " \"" << gridPath << "\" -C\"" << bathymetryPalettePath.string() << "\"" << yUpArg << " -t40 -Vq" << std::endl;
+    }
 
     // Plot zmax grid
-    scriptOfs << "gmt grdimage -JM" << map_w_str << "  -R" << extentStr << " \"" << zMaxPlotPath.string() << "\" " << yUpArg << " -C\"" << palettePath.string() << "\" -Qwhite -Vq" << std::endl;
+    scriptOfs << "gmt grdimage -JM" << map_w_str << "  -R" << extentStr << " \"" << zMaxPlotPath.string() << "\" " << yUpArg << " -C\"" << palettePath.string() << "\" -Qwhite" << waveTransArg << " -Vq" << std::endl;
 
     // Draw map frame and title
     scriptOfs << "gmt basemap -JM" << map_w_str << " -R" << extentStr << " -Baf -BWSen+t\"" << title << "\" --FONT_TITLE=14p,Helvetica --FONT_ANNOT=6p,Helvetica -Vq" << std::endl;
@@ -1852,16 +1861,18 @@ namespace TsunamiPlot
     scriptOfs << "export GMT_USERDIR=\"/tmp/gmt_user_$$\"" << std::endl;
 #endif
 
-    // Create a CPT file for bathymetry using the globe base palette
-    // Bathymetry grid must be positive for land and negative for sea, so only invert the palette if requested
-    if (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1")
+    string satellitePath = options.get("satellite");
+    bool showBathy = Strings::tolower(options.get("show_bathy")) == "true";
+    int waveTrans = 0;
+    try { if (!options.get("wave_transparency").empty()) waveTrans = std::stoi(options.get("wave_transparency")); } catch (...) {}
+    string waveTransArg = (waveTrans > 0) ? " -t" + std::to_string(waveTrans) : "";
+
+    if (showBathy && satellitePath.empty())
     {
-      // Invert the globe palette for bathymetry
-      scriptOfs << "gmt makecpt -Cglobe -I -D > \"" << bathymetryPalettePath.string() << "\" " << std::endl;
-    }
-    else
-    {
-      scriptOfs << "gmt makecpt -Cglobe -D > \"" << bathymetryPalettePath.string() << "\" " << std::endl;
+      if (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1")
+        scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray -I -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+      else
+        scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
     }
 
     // Create extent string
@@ -1895,11 +1906,17 @@ namespace TsunamiPlot
     scriptOfs << "gmt legend " << legendFile << " -Rd -JX12c/9c -DjLB+o0c/-2c -F --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_TITLE=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
 
 
-    // Plot bathymetry - Offset Y by 12C to leave space for the legend, override -R to match grid. Set transparency to 70 percent
-    // scriptOfs << "gmt grdimage -JM10c -R" << extentStr << " \"" << gridPath << "\"  -C\"" << bathymetryPalettePath.string() << "\" -Y11c -Vq" << std::endl;
+    if (!satellitePath.empty())
+    {
+      scriptOfs << "gmt grdimage -JM10c -R" << extentStr << " \"" << satellitePath << "\" -Vq" << std::endl;
+    }
+    else if (showBathy)
+    {
+      scriptOfs << "gmt grdimage -JM10c -R" << extentStr << " \"" << gridPath << "\" -C\"" << bathymetryPalettePath.string() << "\" -t40 -Vq" << std::endl;
+    }
 
     // Plot inundation grid
-    scriptOfs << "gmt grdimage -JM10c  -R" << extentStr << " \"" << inundPlotPath.string() << "\" -C\"" << palettePath.string() << "\" -Q -Vq" << std::endl;
+    scriptOfs << "gmt grdimage -JM10c  -R" << extentStr << " \"" << inundPlotPath.string() << "\" -C\"" << palettePath.string() << "\" -Qwhite" << waveTransArg << " -Vq" << std::endl;
 
     // Draw map frame and title
     scriptOfs << "gmt basemap -JM10c -R" << extentStr << " -Baf -BWSen+t\"" << title << "\" --FONT_TITLE=14p,Helvetica --FONT_ANNOT=6p,Helvetica -Vq" << std::endl;
@@ -2181,17 +2198,22 @@ namespace TsunamiPlot
     scriptOfs << "export GMT_USERDIR=\"/tmp/gmt_user_$$\"" << std::endl;
 #endif
 
-    if (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1")
+    string satellitePath = options.get("satellite");
+    bool showBathy = Strings::tolower(options.get("show_bathy")) == "true";
+    int waveTrans = 0;
+    try { if (!options.get("wave_transparency").empty()) waveTrans = std::stoi(options.get("wave_transparency")); } catch (...) {}
+    string waveTransArg = (waveTrans > 0) ? " -t" + std::to_string(waveTrans) : "";
+
+    if (showBathy && satellitePath.empty())
     {
-      scriptOfs << "gmt makecpt -Cglobe -I -D > \"" << bathymetryPalettePath.string() << "\" " << std::endl;
-    }
-    else
-    {
-      scriptOfs << "gmt makecpt -Cglobe -D > \"" << bathymetryPalettePath.string() << "\" " << std::endl;
+      if (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1")
+        scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray -I -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+      else
+        scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
     }
 
     // Auto-scale the max-wave color progression to the vmax data range
-    scriptOfs << "gmt grd2cpt \"" << vmaxPlotPath.string() << "\" -C\"" << maxPalettePath.string() << "\" -Z -D > \"" << vmaxPalettePath.string() << "\"" << std::endl;
+    scriptOfs << "gmt grd2cpt \"" << vmaxPlotPath.string() << "\" -C\"" << maxPalettePath.string() << "\" -Z > \"" << vmaxPalettePath.string() << "\"" << std::endl;
 
     string extentStr = std::to_string(x0) + "/" + std::to_string(xMax) + "/" + std::to_string(y0) + "/" + std::to_string(yMax);
 
@@ -2206,10 +2228,16 @@ namespace TsunamiPlot
     // Skip legend
     // scriptOfs << "gmt legend " << legendFile << " -Rd -JX12c/9c -DjLT -F --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_TITLE=6p,Helvetica --FONT_LABEL=6p,Helvetica -Vq" << std::endl;
 
-    // Skip bathymetry plot
-    // scriptOfs << "gmt grdimage -JM10c -R" << extentStr << " \"" << gridPath << "\"  -C\"" << bathymetryPalettePath.string() << "\" -Y11c -Vq" << std::endl;
+    if (!satellitePath.empty())
+    {
+      scriptOfs << "gmt grdimage -JM10c -R" << extentStr << " \"" << satellitePath << "\" -Vq" << std::endl;
+    }
+    else if (showBathy)
+    {
+      scriptOfs << "gmt grdimage -JM10c -R" << extentStr << " \"" << gridPath << "\" -C\"" << bathymetryPalettePath.string() << "\" -t40 -Vq" << std::endl;
+    }
 
-    scriptOfs << "gmt grdimage -JM10c  -R" << extentStr << " \"" << vmaxPlotPath.string() << "\" -C\"" << vmaxPalettePath.string() << "\" -Q -Vq" << std::endl;
+    scriptOfs << "gmt grdimage -JM10c  -R" << extentStr << " \"" << vmaxPlotPath.string() << "\" -C\"" << vmaxPalettePath.string() << "\" -Qwhite" << waveTransArg << " -Vq" << std::endl;
 
     scriptOfs << "gmt basemap -JM10c -R" << extentStr << " -Baf -BWSen+t\"" << title << "\" --FONT_TITLE=14p,Helvetica --FONT_ANNOT=6p,Helvetica -Vq" << std::endl;
 
