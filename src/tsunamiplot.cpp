@@ -988,7 +988,13 @@ namespace TsunamiPlot
         // Physical palettes (globe, geo, topo, ...) must NOT be rescaled to the local
         // data range or the depth-to-colour mapping is destroyed.  Use makecpt so the
         // standard anchoring (0 = sea level) is preserved.
-        scriptOfs << "gmt makecpt -C" << bathyCpt << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+        // When plot_invbat=true the grid stores positive=ocean, negative=land (TUNAMI
+        // convention), which is the opposite of what globe/geo expect.  Invert the
+        // entire palette (-I flips both the z-axis and the colour sequence) so that
+        // positive values get ocean colours and negative values get land colours.
+        bool bathyInvert = Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1";
+        scriptOfs << "gmt makecpt -C" << bathyCpt
+                  << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
       }
     }
 
@@ -1926,7 +1932,13 @@ namespace TsunamiPlot
         // Physical palettes (globe, geo, topo, ...) must NOT be rescaled to the local
         // data range or the depth-to-colour mapping is destroyed.  Use makecpt so the
         // standard anchoring (0 = sea level) is preserved.
-        scriptOfs << "gmt makecpt -C" << bathyCpt << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+        // When plot_invbat=true the grid stores positive=ocean, negative=land (TUNAMI
+        // convention), which is the opposite of what globe/geo expect.  Invert the
+        // entire palette (-I flips both the z-axis and the colour sequence) so that
+        // positive values get ocean colours and negative values get land colours.
+        bool bathyInvert = Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1";
+        scriptOfs << "gmt makecpt -C" << bathyCpt
+                  << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
       }
     }
 
@@ -2288,7 +2300,13 @@ namespace TsunamiPlot
         // Physical palettes (globe, geo, topo, ...) must NOT be rescaled to the local
         // data range or the depth-to-colour mapping is destroyed.  Use makecpt so the
         // standard anchoring (0 = sea level) is preserved.
-        scriptOfs << "gmt makecpt -C" << bathyCpt << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+        // When plot_invbat=true the grid stores positive=ocean, negative=land (TUNAMI
+        // convention), which is the opposite of what globe/geo expect.  Invert the
+        // entire palette (-I flips both the z-axis and the colour sequence) so that
+        // positive values get ocean colours and negative values get land colours.
+        bool bathyInvert = Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1";
+        scriptOfs << "gmt makecpt -C" << bathyCpt
+                  << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
       }
     }
 
