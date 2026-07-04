@@ -500,7 +500,7 @@ namespace TsunamiPlot
 
     // Create a CPT file for bathymetry using the globe base palette
     // Bathymetry grid must be positive for land and negative for sea, so only invert the palette if requested
-    if (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1")
+    if (Strings::tolower(options.get("bathy_convention")) == "tunami")
     {
       // Invert the globe palette for bathymetry
       scriptOfs << "gmt makecpt -Cglobe -I -D > \"" << bathymetryPalettePath.string() << "\" " << std::endl;
@@ -979,7 +979,7 @@ namespace TsunamiPlot
       if (bathyCpt == "gray")
       {
         // Scale gray palette to the local data range; invert if requested so deep = dark.
-        bool bathyInvert = Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1";
+        bool bathyInvert = Strings::tolower(options.get("bathy_convention")) == "tunami";
         scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray"
                   << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
       }
@@ -988,11 +988,11 @@ namespace TsunamiPlot
         // Physical palettes (globe, geo, topo, ...) must NOT be rescaled to the local
         // data range or the depth-to-colour mapping is destroyed.  Use makecpt so the
         // standard anchoring (0 = sea level) is preserved.
-        // When plot_invbat=true the grid stores positive=ocean, negative=land (TUNAMI
-        // convention), which is the opposite of what globe/geo expect.  Invert the
-        // entire palette (-I flips both the z-axis and the colour sequence) so that
-        // positive values get ocean colours and negative values get land colours.
-        bool bathyInvert = Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1";
+        // When bathy_convention=tunami the grid stores positive=ocean, negative=land,
+        // which is the opposite of what globe/geo expect.  Invert the entire palette
+        // (-I flips both the z-axis and the colour sequence) so that positive values
+        // get ocean colours and negative values get land colours.
+        bool bathyInvert = Strings::tolower(options.get("bathy_convention")) == "tunami";
         scriptOfs << "gmt makecpt -C" << bathyCpt
                   << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
       }
@@ -1923,7 +1923,7 @@ namespace TsunamiPlot
       if (bathyCpt == "gray")
       {
         // Scale gray palette to the local data range; invert if requested so deep = dark.
-        bool bathyInvert = Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1";
+        bool bathyInvert = Strings::tolower(options.get("bathy_convention")) == "tunami";
         scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray"
                   << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
       }
@@ -1932,11 +1932,11 @@ namespace TsunamiPlot
         // Physical palettes (globe, geo, topo, ...) must NOT be rescaled to the local
         // data range or the depth-to-colour mapping is destroyed.  Use makecpt so the
         // standard anchoring (0 = sea level) is preserved.
-        // When plot_invbat=true the grid stores positive=ocean, negative=land (TUNAMI
-        // convention), which is the opposite of what globe/geo expect.  Invert the
-        // entire palette (-I flips both the z-axis and the colour sequence) so that
-        // positive values get ocean colours and negative values get land colours.
-        bool bathyInvert = Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1";
+        // When bathy_convention=tunami the grid stores positive=ocean, negative=land,
+        // which is the opposite of what globe/geo expect.  Invert the entire palette
+        // (-I flips both the z-axis and the colour sequence) so that positive values
+        // get ocean colours and negative values get land colours.
+        bool bathyInvert = Strings::tolower(options.get("bathy_convention")) == "tunami";
         scriptOfs << "gmt makecpt -C" << bathyCpt
                   << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
       }
@@ -2291,7 +2291,7 @@ namespace TsunamiPlot
       if (bathyCpt == "gray")
       {
         // Scale gray palette to the local data range; invert if requested so deep = dark.
-        bool bathyInvert = Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1";
+        bool bathyInvert = Strings::tolower(options.get("bathy_convention")) == "tunami";
         scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray"
                   << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
       }
@@ -2300,11 +2300,11 @@ namespace TsunamiPlot
         // Physical palettes (globe, geo, topo, ...) must NOT be rescaled to the local
         // data range or the depth-to-colour mapping is destroyed.  Use makecpt so the
         // standard anchoring (0 = sea level) is preserved.
-        // When plot_invbat=true the grid stores positive=ocean, negative=land (TUNAMI
-        // convention), which is the opposite of what globe/geo expect.  Invert the
-        // entire palette (-I flips both the z-axis and the colour sequence) so that
-        // positive values get ocean colours and negative values get land colours.
-        bool bathyInvert = Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1";
+        // When bathy_convention=tunami the grid stores positive=ocean, negative=land,
+        // which is the opposite of what globe/geo expect.  Invert the entire palette
+        // (-I flips both the z-axis and the colour sequence) so that positive values
+        // get ocean colours and negative values get land colours.
+        bool bathyInvert = Strings::tolower(options.get("bathy_convention")) == "tunami";
         scriptOfs << "gmt makecpt -C" << bathyCpt
                   << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
       }
@@ -3238,13 +3238,13 @@ namespace TsunamiPlot
         bathyCpt = "gray";
       if (bathyCpt == "gray")
       {
-        bool bathyInvert = Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1";
+        bool bathyInvert = Strings::tolower(options.get("bathy_convention")) == "tunami";
         scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray"
                   << (bathyInvert ? " -I" : "") << " -D > \"" << bathyPalettePath.string() << "\"" << endl;
       }
       else
       {
-        bool bathyInvert = Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1";
+        bool bathyInvert = Strings::tolower(options.get("bathy_convention")) == "tunami";
         scriptOfs << "gmt makecpt -C" << bathyCpt
                   << (bathyInvert ? " -I" : "") << " -D > \"" << bathyPalettePath.string() << "\"" << endl;
       }
