@@ -1013,6 +1013,11 @@ namespace TsunamiPlot
     // -- shift Y up to leave room for the legend below
     string yUpArg = legendActive ? (" -Y" + std::to_string(yUp) + "c") : "";
 
+    bool backgroundRendered = !satellitePath.empty() || showBathy;
+    // The background layer (satellite/bathy) shifts the origin with yUpArg.
+    // Subsequent layers must NOT repeat the shift or the map renders twice as far up.
+    string waveYUpArg = backgroundRendered ? "" : yUpArg;
+
     if (!satellitePath.empty())
     {
       scriptOfs << "gmt grdimage -JM" << map_w_str << " -R" << extentStr << " \"" << satellitePath << "\"" << yUpArg << " -Vq" << std::endl;
@@ -1023,7 +1028,7 @@ namespace TsunamiPlot
     }
 
     // Plot zmax grid
-    scriptOfs << "gmt grdimage -JM" << map_w_str << "  -R" << extentStr << " \"" << zMaxPlotPath.string() << "\" " << yUpArg << " -C\"" << palettePath.string() << "\" -Qwhite" << waveTransArg << " -Vq" << std::endl;
+    scriptOfs << "gmt grdimage -JM" << map_w_str << "  -R" << extentStr << " \"" << zMaxPlotPath.string() << "\" " << waveYUpArg << " -C\"" << palettePath.string() << "\" -Qwhite" << waveTransArg << " -Vq" << std::endl;
 
     // Draw map frame and title
     scriptOfs << "gmt basemap -JM" << map_w_str << " -R" << extentStr << " -Baf -BWSen+t\"" << title << "\" --FONT_TITLE=14p,Helvetica --FONT_ANNOT=6p,Helvetica -Vq" << std::endl;
