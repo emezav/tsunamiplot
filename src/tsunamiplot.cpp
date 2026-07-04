@@ -972,10 +972,14 @@ namespace TsunamiPlot
 
     if (showBathy && satellitePath.empty())
     {
-      if (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1")
-        scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray -I -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
-      else
-        scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+      string bathyCpt = options.get("bathy_cpt");
+      if (bathyCpt.empty() || !std::all_of(bathyCpt.begin(), bathyCpt.end(),
+          [](char c){ return std::isalnum((unsigned char)c) || c == '_' || c == '-'; }))
+        bathyCpt = "gray";
+      bool bathyInvert = (bathyCpt == "gray") &&
+          (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1");
+      scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -C" << bathyCpt
+                << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
     }
 
     // Create extent string
@@ -1896,10 +1900,14 @@ namespace TsunamiPlot
 
     if (showBathy && satellitePath.empty())
     {
-      if (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1")
-        scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray -I -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
-      else
-        scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+      string bathyCpt = options.get("bathy_cpt");
+      if (bathyCpt.empty() || !std::all_of(bathyCpt.begin(), bathyCpt.end(),
+          [](char c){ return std::isalnum((unsigned char)c) || c == '_' || c == '-'; }))
+        bathyCpt = "gray";
+      bool bathyInvert = (bathyCpt == "gray") &&
+          (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1");
+      scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -C" << bathyCpt
+                << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
     }
 
     // Create extent string
@@ -2244,10 +2252,14 @@ namespace TsunamiPlot
 
     if (showBathy && satellitePath.empty())
     {
-      if (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1")
-        scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray -I -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
-      else
-        scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+      string bathyCpt = options.get("bathy_cpt");
+      if (bathyCpt.empty() || !std::all_of(bathyCpt.begin(), bathyCpt.end(),
+          [](char c){ return std::isalnum((unsigned char)c) || c == '_' || c == '-'; }))
+        bathyCpt = "gray";
+      bool bathyInvert = (bathyCpt == "gray") &&
+          (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1");
+      scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -C" << bathyCpt
+                << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
     }
 
     // Auto-scale the max-wave color progression to the vmax data range
