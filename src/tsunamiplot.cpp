@@ -3293,8 +3293,10 @@ namespace TsunamiPlot
     else if (scaleLengthKm < 1000) scaleLengthKm = round(scaleLengthKm / 50.0f) * 50.0f;
     else                           scaleLengthKm = round(scaleLengthKm / 500.0f) * 500.0f;
 
-    // Coast or outline drawn immediately after raster so land covers nodata cells.
-    // -Gwhite fills land; coastlines and borders drawn on top.
+    // Coast or outline drawn after raster.  Without a background layer, -Gwhite fills
+    // land to cover nodata cells.  With a background, land is already visible through
+    // the transparent NaN propagation cells, so -Gwhite is omitted and only coastlines
+    // and borders are drawn.
     fs::path outlinePath(gridPath);
     string outlineFilename = options.get("outline");
     if (outlineFilename.empty()) outlineFilename = "contour.gmt";
@@ -3311,8 +3313,9 @@ namespace TsunamiPlot
     }
     else if (plotCoast)
     {
+      string landFill = hasBackground ? "" : " -Gwhite";
       scriptOfs << "gmt coast -JM" << map_w_str << " -R" << extentStr
-                << " -D" << coastRes << " -Gwhite -N1/0.01p,gray77 -Wthinnest,dimgray"
+                << " -D" << coastRes << landFill << " -N1/0.01p,gray77 -Wthinnest,dimgray"
                 << " --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << endl;
     }
 
