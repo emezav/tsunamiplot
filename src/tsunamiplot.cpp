@@ -976,10 +976,20 @@ namespace TsunamiPlot
       if (bathyCpt.empty() || !std::all_of(bathyCpt.begin(), bathyCpt.end(),
           [](char c){ return std::isalnum((unsigned char)c) || c == '_' || c == '-'; }))
         bathyCpt = "gray";
-      bool bathyInvert = (bathyCpt == "gray") &&
-          (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1");
-      scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -C" << bathyCpt
-                << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+      if (bathyCpt == "gray")
+      {
+        // Scale gray palette to the local data range; invert if requested so deep = dark.
+        bool bathyInvert = Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1";
+        scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray"
+                  << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+      }
+      else
+      {
+        // Physical palettes (globe, geo, topo, ...) must NOT be rescaled to the local
+        // data range or the depth-to-colour mapping is destroyed.  Use makecpt so the
+        // standard anchoring (0 = sea level) is preserved.
+        scriptOfs << "gmt makecpt -C" << bathyCpt << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+      }
     }
 
     // Create extent string
@@ -1904,10 +1914,20 @@ namespace TsunamiPlot
       if (bathyCpt.empty() || !std::all_of(bathyCpt.begin(), bathyCpt.end(),
           [](char c){ return std::isalnum((unsigned char)c) || c == '_' || c == '-'; }))
         bathyCpt = "gray";
-      bool bathyInvert = (bathyCpt == "gray") &&
-          (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1");
-      scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -C" << bathyCpt
-                << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+      if (bathyCpt == "gray")
+      {
+        // Scale gray palette to the local data range; invert if requested so deep = dark.
+        bool bathyInvert = Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1";
+        scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray"
+                  << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+      }
+      else
+      {
+        // Physical palettes (globe, geo, topo, ...) must NOT be rescaled to the local
+        // data range or the depth-to-colour mapping is destroyed.  Use makecpt so the
+        // standard anchoring (0 = sea level) is preserved.
+        scriptOfs << "gmt makecpt -C" << bathyCpt << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+      }
     }
 
     // Create extent string
@@ -2256,10 +2276,20 @@ namespace TsunamiPlot
       if (bathyCpt.empty() || !std::all_of(bathyCpt.begin(), bathyCpt.end(),
           [](char c){ return std::isalnum((unsigned char)c) || c == '_' || c == '-'; }))
         bathyCpt = "gray";
-      bool bathyInvert = (bathyCpt == "gray") &&
-          (Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1");
-      scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -C" << bathyCpt
-                << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+      if (bathyCpt == "gray")
+      {
+        // Scale gray palette to the local data range; invert if requested so deep = dark.
+        bool bathyInvert = Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1";
+        scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray"
+                  << (bathyInvert ? " -I" : "") << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+      }
+      else
+      {
+        // Physical palettes (globe, geo, topo, ...) must NOT be rescaled to the local
+        // data range or the depth-to-colour mapping is destroyed.  Use makecpt so the
+        // standard anchoring (0 = sea level) is preserved.
+        scriptOfs << "gmt makecpt -C" << bathyCpt << " -D > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+      }
     }
 
     // Auto-scale the max-wave color progression to the vmax data range
