@@ -3214,10 +3214,48 @@ namespace TsunamiPlot
     scriptOfs << "export GMT_USERDIR=\"/tmp/gmt_user_$$\"" << endl;
 #endif
 
+    // Resolve satellite and bathy options
+    string satFilename = options.get("satellite");
+    string satPath;
+    if (!satFilename.empty())
+    {
+      fs::path satResolved(gridPath);
+      satResolved.replace_filename(satFilename);
+      if (fs::exists(satResolved))
+        satPath = fs::canonical(satResolved).string();
+      else
+        cerr << "Warning: satellite image not found: " << satResolved.string() << endl;
+    }
+    bool showBathy = Strings::tolower(options.get("show_bathy")) == "true";
+    bool hasBackground = !satPath.empty() || showBathy;
+
+    fs::path bathyPalettePath = fs::temp_directory_path() / "bathymetry_palette.cpt";
+    if (showBathy && satPath.empty())
+    {
+      string bathyCpt = options.get("bathy_cpt");
+      if (bathyCpt.empty() || !std::all_of(bathyCpt.begin(), bathyCpt.end(),
+          [](char c){ return std::isalnum((unsigned char)c) || c == '_' || c == '-'; }))
+        bathyCpt = "gray";
+      if (bathyCpt == "gray")
+      {
+        bool bathyInvert = Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1";
+        scriptOfs << "gmt grd2cpt \"" << gridPath << "\" -Cgray"
+                  << (bathyInvert ? " -I" : "") << " -D > \"" << bathyPalettePath.string() << "\"" << endl;
+      }
+      else
+      {
+        bool bathyInvert = Strings::tolower(options.get("plot_invbat")) == "true" || options.get("plot_invbat") == "1";
+        scriptOfs << "gmt makecpt -C" << bathyCpt
+                  << (bathyInvert ? " -I" : "") << " -D > \"" << bathyPalettePath.string() << "\"" << endl;
+      }
+    }
+
     // CPT: jet inverted (red=near/source, blue=far), scaled 0..maxTime hours, 1h steps.
-    // -I inverts the palette. --COLOR_NAN=lightgray: land is overwritten white by coast -Gwhite,
-    // leaving unreached ocean as lightgray -- three distinct visual categories.
-    scriptOfs << "gmt makecpt -Cjet -I -T0/" << maxTime << "/1 -Z --COLOR_NAN=lightgray > \"" << propPalettePath.string() << "\"" << endl;
+    // When a background layer is present, NaN (land/unreached ocean) is made transparent
+    // via -Q so the background shows through.  Without a background, COLOR_NAN=lightgray
+    // gives a distinct third visual category between reached-ocean and land.
+    string colorNanArg = hasBackground ? "" : " --COLOR_NAN=lightgray";
+    scriptOfs << "gmt makecpt -Cjet -I -T0/" << maxTime << "/1 -Z" << colorNanArg << " > \"" << propPalettePath.string() << "\"" << endl;
 
     scriptOfs << "gmt begin \"" << propGridPath.replace_extension("").string() << "\" png E600" << endl;
 
@@ -3227,10 +3265,23 @@ namespace TsunamiPlot
     scriptOfs << "gmt set PS_LINE_CAP round" << endl;
     scriptOfs << "gmt set PS_LINE_JOIN round" << endl;
 
-    // Propagation time raster
+    // Background layer (satellite or bathymetry) rendered before propagation raster
+    if (!satPath.empty())
+    {
+      scriptOfs << "gmt grdimage -JM" << map_w_str << " -R" << extentStr
+                << " \"" << satPath << "\" -Vq" << endl;
+    }
+    else if (showBathy)
+    {
+      scriptOfs << "gmt grdimage -JM" << map_w_str << " -R" << extentStr
+                << " \"" << gridPath << "\" -C\"" << bathyPalettePath.string() << "\" -t40 -Vq" << endl;
+    }
+
+    // Propagation time raster; -Q makes NaN transparent when a background is present.
+    string propQArg = hasBackground ? " -Q" : " -Qwhite";
     scriptOfs << "gmt grdimage -JM" << map_w_str << " -R" << extentStr
               << " \"" << propPlotPath.string() << "\" -C\"" << propPalettePath.string()
-              << "\" -Qwhite -Vq" << endl;
+              << "\"" << propQArg << " -Vq" << endl;
 
     // Scale bar length
     double gridLengthKm = std::min((double)(columns * dxM), (double)(rows * dyM)) / 1000.0;
