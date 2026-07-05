@@ -12,6 +12,7 @@
 
 #include "geo.h"
 #include "tsunamiplot.h"
+#include "version.h"
 
 void usage(char * program) ;
 
@@ -24,6 +25,23 @@ int main(int argc, char * argv[]) {
 
   using namespace TsunamiPlot;
 
+
+  if (argc == 2)
+  {
+    std::string a1 = argv[1];
+    if (a1 == "--version" || a1 == "version")
+    {
+      cout << APP_NAME << " " << APP_VERSION << " (" << GIT_COMMIT << ")" << endl;
+      return 0;
+    }
+    if (a1 == "--build" || a1 == "build")
+    {
+      cout << APP_NAME << " " << APP_VERSION << endl;
+      cout << "Build:  " << BUILD_TIMESTAMP << endl;
+      cout << "Commit: " << GIT_DESCRIBE << endl;
+      return 0;
+    }
+  }
 
   std::ostringstream cmdLineOss;
 
@@ -104,6 +122,7 @@ void usage(char * program) {
   using std::cout;
   using std::endl;
 
+  cout << APP_NAME << " " << APP_VERSION << " (" << GIT_COMMIT << ")" << endl << endl;
   cout << "Usage: " << program << " type [options]" << endl;
   cout << "General options:" << endl;
   cout << "  type                     Type of plot to create. See below." << endl;
@@ -181,4 +200,7 @@ void usage(char * program) {
   cout << "  dxm=<cellsize_x>       Cell size in x direction for text grids (meters)" << endl;
   cout << "  dym=<cellsize_y>       Cell size in y direction for text grids (meters)" << endl;
   cout << endl;
+  cout << "Other commands:" << endl;
+  cout << "  --version   Print version and git commit hash." << endl;
+  cout << "  --build     Print version, build timestamp, and git describe." << endl;
 }

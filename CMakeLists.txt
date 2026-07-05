@@ -13,6 +13,33 @@ string(REPLACE " " "_" ProjectId ${ProjectName})
 
 project(${ProjectName} VERSION 0.9 LANGUAGES CXX)
 
+# Version and build info
+find_package(Git QUIET)
+if(GIT_FOUND)
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_COMMIT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET)
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} describe --tags --always --dirty
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_DESCRIBE
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET)
+endif()
+if(NOT GIT_COMMIT)
+  set(GIT_COMMIT "unknown")
+endif()
+if(NOT GIT_DESCRIBE)
+  set(GIT_DESCRIBE "unknown")
+endif()
+string(TIMESTAMP BUILD_TIMESTAMP "%Y-%m-%d %H:%M UTC" UTC)
+configure_file(
+  ${CMAKE_SOURCE_DIR}/include/version.h.in
+  ${CMAKE_BINARY_DIR}/version.h)
+
 # To use a custom project name:
 # comment the project(...) line before this comment,
 # replace MYPROJECT with the desired project name and uncomment the following line:
@@ -69,8 +96,19 @@ endif()
 # Add c/c++ headers and sources in src/ and include/folders
 file(GLOB cpu_source_files "${CMAKE_SOURCE_DIR}/src/*.cpp" "${CMAKE_SOURCE_DIR}/include/*.h")
 
+# Embed Windows version resource
+if(WIN32)
+  configure_file(
+    ${CMAKE_SOURCE_DIR}/version.rc.in
+    ${CMAKE_BINARY_DIR}/version.rc)
+  list(APPEND cpu_source_files ${CMAKE_BINARY_DIR}/version.rc)
+endif()
+
 # Add include directory "./include"
 include_directories(${CMAKE_SOURCE_DIR}/include)
+
+# Add build directory to include path (picks up generated version.h)
+include_directories(${CMAKE_BINARY_DIR})
 
 # Add project default executable
 add_executable(${PROJECT_NAME} ${cpu_source_files})
