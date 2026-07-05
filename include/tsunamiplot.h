@@ -47,6 +47,12 @@ namespace TsunamiPlot
    * @param options Geo options
    */
   void plotPropagation(geo::Options &options);
+
+  /**
+   * @brief Plot bathymetry grid
+   * @param options Geo options
+   */
+  void plotBathy(geo::Options &options);
 }
 
 #endif // TSUNAMIPLOT_H

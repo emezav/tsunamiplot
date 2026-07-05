@@ -651,6 +651,228 @@ namespace TsunamiPlot
   }
 
   /**
+   * @brief Create a bathymetry plot script
+   * @param bathymetryPath Path to bathymetry ESRI grid (.bil)
+   * @param options Geo options
+   * @return fs::path Path to generated script
+   */
+  fs::path createBathyPlotScript(string bathymetryPath, geo::Options &options)
+  {
+    string lang = Strings::tolower(options.get("lang"));
+    if (lang.length() == 0) lang = "es";
+    string langUpper = Strings::toupper(static_cast<string>(lang));
+
+    bool plotCoast = Strings::tolower(options.get("plot_coast")) != "false";
+    string coastRes = options.get("coast_resolution");
+    if (coastRes.size() != 1) coastRes = "f";
+
+    string fileExt = ".bat";
+#ifdef __linux__
+    fileExt = ".sh";
+#endif
+
+    fs::path scriptPath = fs::temp_directory_path() / (fs::path(bathymetryPath).stem().string() + "_bathy" + fileExt);
+
+    std::ofstream scriptOfs(scriptPath.string());
+
+#ifdef WIN32
+    scriptOfs << "@echo off" << std::endl;
+    scriptOfs << "set \"GMT_VERBOSE=quiet\"" << std::endl;
+    scriptOfs << "set \"GMT_END_SHOW=off\"" << std::endl;
+    scriptOfs << "set \"GMT_LANGUAGE=" << langUpper << "\"" << std::endl;
+#elif __linux__
+    scriptOfs << "#!/bin/bash" << std::endl;
+    scriptOfs << "export GMT_VERBOSE=quiet" << std::endl;
+    scriptOfs << "export GMT_END_SHOW=off" << std::endl;
+    scriptOfs << "export GMT_LANGUAGE=" << langUpper << std::endl;
+    scriptOfs << "mkdir -p \"/tmp/gmt_user_$$\"" << std::endl;
+    scriptOfs << "export GMT_USERDIR=\"/tmp/gmt_user_$$\"" << std::endl;
+#endif
+
+    // Load bathymetry grid to get extent and resolution parameters
+    Grid grid;
+    fs::path bathymetryGridPath(bathymetryPath);
+    if (loadGrid(grid, bathymetryGridPath, options) == false)
+    {
+      cerr << "Unable to load grid from " << bathymetryGridPath.string() << endl;
+      scriptOfs.close();
+      fs::remove(scriptPath);
+      return fs::path();
+    }
+
+    auto [x0, y0, xMax, yMax] = grid.extents();
+    auto [dxDeg, dyDeg] = grid.resolutionDegrees();
+    auto [dxM, dyM] = grid.resolutionMeters();
+    auto [rows, columns] = grid.dimensions();
+
+    string extentStr = std::to_string(x0) + "/" + std::to_string(xMax) + "/" + std::to_string(y0) + "/" + std::to_string(yMax);
+
+    fs::path bathymetryPalettePath = fs::temp_directory_path() / "bathymetry_palette.cpt";
+
+    bool bathyCptFit = Strings::tolower(options.get("bathy_cpt_fit")) == "true";
+    bool bathyInvert = Strings::tolower(options.get("bathy_convention")) == "tunami";
+
+    // bathy_cpt selects the GMT palette name.
+    // Default: "geo" when fitting to data range (avoids deep-ocean purple from globe),
+    //          "globe" when using the fixed global scale.
+    string bathyCpt = options.get("bathy_cpt");
+    if (bathyCpt.empty())
+    {
+      bathyCpt = bathyCptFit ? "geo" : "globe";
+    }
+
+    // For TUNAMI convention (positive = depth), negate grid values so that standard
+    // GMT palettes (geo/globe expect negative = ocean depth) apply without -I inversion.
+    // Land near z=0 maps to coastal green instead of the "mountain white" end of an
+    // inverted palette, and the colorbar shows the conventional negative-depth scale.
+    fs::path plotGridPath(bathymetryPath);
+    fs::path negatedGridPath;
+    bool negatedGridCreated = false;
+    if (bathyInvert)
+    {
+      float nd = static_cast<float>(grid.noDataValue());
+      for (int i = 0; i < rows; i++)
+        for (int j = 0; j < columns; j++)
+          if (grid(i, j) != nd)
+            grid(i, j) = -grid(i, j);
+
+      negatedGridPath = fs::temp_directory_path() / (fs::path(bathymetryPath).stem().string() + "_neg.bil");
+      if (geo::SaveGrid(grid, negatedGridPath.string(), GridFormat::ESRI_FLOAT) == geo::geoStatus::SUCCESS)
+      {
+        plotGridPath = negatedGridPath;
+        negatedGridCreated = true;
+      }
+    }
+
+    // Paths for fitted-mode temp grids and CPTs (defined here so cleanup section can access them)
+    fs::path oceanOnlyPath = fs::temp_directory_path() / (fs::path(bathymetryPath).stem().string() + "_ocean.grd");
+    fs::path landOnlyPath  = fs::temp_directory_path() / (fs::path(bathymetryPath).stem().string() + "_land.grd");
+    fs::path landCptPath   = fs::temp_directory_path() / (fs::path(bathymetryPath).stem().string() + "_land.cpt");
+
+    if (bathyCptFit)
+    {
+      // Ocean: clip to z<=0, fit palette with -Z to the actual ocean depth range.
+      scriptOfs << "gmt grdclip \"" << plotGridPath.string() << "\" -Sa0/NaN -G\"" << oceanOnlyPath.string() << "\"" << std::endl;
+      scriptOfs << "gmt grd2cpt \"" << oceanOnlyPath.string() << "\" -C" << bathyCpt << " -Z -D"
+                << " > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+      // Land: clip to 0<z<=8850 (above sea level, below any realistic nodata flag).
+      // TUNAMI grids often store dry land as -9999 (-> +9999 after negation); removing
+      // those cells prevents grd2cpt from pulling the palette white to low elevations.
+      // Both layers use the same base CPT so colors join smoothly at z=0.
+      scriptOfs << "gmt grdclip \"" << plotGridPath.string() << "\" -Sb0/NaN -Sa8850/NaN -G\"" << landOnlyPath.string() << "\"" << std::endl;
+      scriptOfs << "gmt grd2cpt \"" << landOnlyPath.string() << "\" -C" << bathyCpt << " -D"
+                << " > \"" << landCptPath.string() << "\"" << std::endl;
+    }
+    else
+    {
+      scriptOfs << "gmt makecpt -C" << bathyCpt << " -D"
+                << " > \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+    }
+
+    string title = "Batimetria";
+    if (lang == "us") title = "Bathymetry";
+
+    string source = options.get("source");
+    if (source.length()) title += " - " + source;
+
+    string depthStr = "Profundidad/Altura (m)";
+    if (lang == "us") depthStr = "Depth/Elevation (m)";
+
+    // Output PNG: same directory as bathymetry grid, stem + _bathy suffix
+    fs::path outputBase = fs::path(bathymetryPath).parent_path() / (fs::path(bathymetryPath).stem().string() + "_bathy");
+
+    scriptOfs << "gmt begin \"" << outputBase.string() << "\" png E600" << std::endl;
+    scriptOfs << "gmt set MAP_FRAME_TYPE fancy+" << std::endl;
+    scriptOfs << "gmt set MAP_FRAME_WIDTH 2.5p" << std::endl;
+    scriptOfs << "gmt set GMT_LANGUAGE " << langUpper << std::endl;
+
+    if (bathyCptFit)
+    {
+      // Two-layer grdimage with -Q (NaN transparent): ocean-only first, land-only on top.
+      // Land/ocean boundary follows the grid itself, not the coarse GSHHG coastline database,
+      // giving pixel-perfect separation at any grid resolution.
+      scriptOfs << "gmt grdimage -JM15c -R" << extentStr << " \"" << oceanOnlyPath.string() << "\" -C\"" << bathymetryPalettePath.string() << "\" -Q -Bafg -BWSen+t\"" << title << "\" --FONT_TITLE=12p --FONT_ANNOT=6p,Helvetica -Vq" << std::endl;
+      scriptOfs << "gmt grdimage -JM15c -R" << extentStr << " \"" << landOnlyPath.string() << "\" -C\"" << landCptPath.string() << "\" -Q -Vq" << std::endl;
+    }
+    else
+    {
+      scriptOfs << "gmt grdimage -JM15c -R" << extentStr << " \"" << plotGridPath.string() << "\" -C\"" << bathymetryPalettePath.string() << "\" -Bafg -BWSen+t\"" << title << "\" --FONT_TITLE=12p --FONT_ANNOT=6p,Helvetica -Vq" << std::endl;
+    }
+
+    if (plotCoast)
+    {
+      // Coast draws borders and coastline lines only; land fill is handled by the grid layers.
+      scriptOfs << "gmt coast -JM15c -R" << extentStr << " -D" << coastRes << " -N1/0.01p,gray77 -W1/0.01p,dimgray --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
+    }
+
+    double gridLengthX = columns * dxM;
+    double gridLengthY = rows * dyM;
+    double gridLengthKm = std::min(gridLengthX, gridLengthY) / 1000.0;
+
+    float scaleLengthKm = trunc(gridLengthKm / 5.0f);
+    if (scaleLengthKm < 1) scaleLengthKm = 0.1f;
+    if (scaleLengthKm < 1)
+      scaleLengthKm = (scaleLengthKm < 0.5f) ? 0.5f : 1.0f;
+    else if (scaleLengthKm < 10)
+      scaleLengthKm = round(scaleLengthKm);
+    else if (scaleLengthKm < 100)
+      scaleLengthKm = round(scaleLengthKm / 5.0f) * 5.0f;
+    else if (scaleLengthKm < 1000)
+      scaleLengthKm = round(scaleLengthKm / 50.0f) * 50.0f;
+    else
+      scaleLengthKm = round(scaleLengthKm / 500.0f) * 500.0f;
+
+    scriptOfs << "gmt basemap -JM15c -R" << extentStr << " -TdjLT+w30p+f2+l,,,,+o5p/5p -LJBC+c" << y0 << "+l+f+w" << scaleLengthKm << "k+o0p/30p --FONT_TITLE=6p,Helvetica --FONT_ANNOT_PRIMARY=6p,Helvetica --FONT_LABEL=8p,Helvetica -Vq" << std::endl;
+
+    if (!bathyCptFit)
+      scriptOfs << "gmt colorbar -JM15c -R" << extentStr << " -DjMR+w6c/0.5c+o-3c/0c+v -C\"" << bathymetryPalettePath.string() << "\" -Bafg -Baf+l\"" << depthStr << "\" -B+u\" m.\" --FONT_ANNOT_PRIMARY=6p --FONT_LABEL=6p -Vq" << std::endl;
+
+    scriptOfs << "gmt end" << std::endl;
+
+#ifdef __linux__
+    scriptOfs << "rm -rf \"/tmp/gmt_user_$$\"" << std::endl;
+#endif
+
+#ifndef _DEBUG
+#ifdef WIN32
+    scriptOfs << "del \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+    if (negatedGridCreated)
+    {
+      fs::path negatedHdrPath = negatedGridPath; negatedHdrPath.replace_extension(".hdr");
+      fs::path negatedPrjPath = negatedGridPath; negatedPrjPath.replace_extension(".prj");
+      scriptOfs << "if exist \"" << negatedGridPath.string() << "\" del \"" << negatedGridPath.string() << "\"" << std::endl;
+      scriptOfs << "if exist \"" << negatedHdrPath.string() << "\" del \"" << negatedHdrPath.string() << "\"" << std::endl;
+      scriptOfs << "if exist \"" << negatedPrjPath.string() << "\" del \"" << negatedPrjPath.string() << "\"" << std::endl;
+    }
+    if (bathyCptFit)
+    {
+      scriptOfs << "if exist \"" << oceanOnlyPath.string() << "\" del \"" << oceanOnlyPath.string() << "\"" << std::endl;
+      scriptOfs << "if exist \"" << landOnlyPath.string() << "\" del \"" << landOnlyPath.string() << "\"" << std::endl;
+      scriptOfs << "if exist \"" << landCptPath.string() << "\" del \"" << landCptPath.string() << "\"" << std::endl;
+    }
+#elif __linux__
+    scriptOfs << "rm \"" << bathymetryPalettePath.string() << "\"" << std::endl;
+    if (negatedGridCreated)
+    {
+      fs::path negatedHdrPath = negatedGridPath; negatedHdrPath.replace_extension(".hdr");
+      fs::path negatedPrjPath = negatedGridPath; negatedPrjPath.replace_extension(".prj");
+      scriptOfs << "rm -f \"" << negatedGridPath.string() << "\" \"" << negatedHdrPath.string() << "\" \"" << negatedPrjPath.string() << "\"" << std::endl;
+    }
+    if (bathyCptFit)
+      scriptOfs << "rm -f \"" << oceanOnlyPath.string() << "\" \"" << landOnlyPath.string() << "\" \"" << landCptPath.string() << "\"" << std::endl;
+#endif
+#endif
+
+    scriptOfs.close();
+
+#ifdef __linux__
+    fs::permissions(scriptPath, fs::perms::owner_exec, fs::perm_options::add);
+#endif
+
+    return scriptPath;
+  }
+
+  /**
    * @brief Create a Max Plot Script object
    * @param zMaxPath Max Z grid path
    * @param waveDataPath Wave data path
@@ -2605,6 +2827,50 @@ namespace TsunamiPlot
     }
 
     cout << "Deform " << deformPath.replace_extension("png").string() << " created" << std::endl;
+  }
+
+  void plotBathy(geo::Options &options)
+  {
+    auto [inputPath, outputPath] = getPaths(options);
+
+    fs::path bathymetryPath = fs::path(options.get("grid"));
+
+    Grid bathymetryGrid;
+    if (loadGrid(bathymetryGrid, bathymetryPath, options, true) == false)
+    {
+      cerr << "Unable to load bathymetry grid from " << options.get("grid") << endl;
+      return;
+    }
+
+    cout << "Plotting bathymetry grid " << bathymetryPath.string() << " ..." << std::endl;
+
+    // loadGrid with convertToEsri=true replaces the extension to .bil
+    bathymetryPath = bathymetryPath.replace_extension(".bil");
+
+    fs::path scriptPath = createBathyPlotScript(bathymetryPath.string(), options);
+    if (scriptPath.empty()) return;
+
+    int exitCode = executeCommand(scriptPath.string(), true);
+
+#ifndef _DEBUG
+    try
+    {
+      fs::remove(scriptPath);
+    }
+    catch (fs::filesystem_error &e)
+    {
+      cerr << "Error removing temporary script file: " << e.what() << endl;
+    }
+#endif
+
+    if (exitCode != 0)
+    {
+      cerr << "Plot script failed with exit code " << exitCode << endl;
+      return;
+    }
+
+    fs::path pngPath = bathymetryPath.parent_path() / (bathymetryPath.stem().string() + "_bathy.png");
+    cout << "Bathy " << pngPath.string() << " created" << std::endl;
   }
 
   void plotZMax(geo::Options &options)

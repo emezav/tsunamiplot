@@ -110,6 +110,8 @@ int main(int argc, char * argv[]) {
     plotVmax(options);
   } else if (plotType == "plot-prop") {
     plotPropagation(options);
+  } else if (plotType == "plot-bathy") {
+    plotBathy(options);
   } else {
     usage(argv[0]);
     return 1;
@@ -153,6 +155,10 @@ void usage(char * program) {
 
   cout << endl;
   cout << "Options depending on the plot type:" << endl;
+  cout << endl;
+  cout << "  plot-bathy   <options> Plot bathymetry grid" << endl;
+  cout << "                         grid=<path to bathymetry>" << endl;
+  cout << "                         bathy_convention=<gebco|tunami>  Palette orientation (default: gebco)" << endl;
   cout << endl;
   cout << "  plot-deform  <options> Plot deformation grid" << endl;
   cout << "                         deform=<path to deform grid>" << endl;
