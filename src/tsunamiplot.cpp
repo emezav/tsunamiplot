@@ -1337,7 +1337,7 @@ namespace TsunamiPlot
 
     // Check if outline file exists
     if (fs::exists(outlinePath))
-    {      
+    {
         cout << "Using outline file: " << fs::canonical(outlinePath).string() << endl;
         // If file is binary plot with -bi2f
         if (Strings::tolower(outlinePath.extension().string()) == ".bin" || Strings::tolower(outlinePath.extension().string()) == ".bf2")
@@ -1348,7 +1348,7 @@ namespace TsunamiPlot
         {
           // Plot as text file, add -J and -R to match the grid
           scriptOfs << "gmt plot -JM" << map_w_str << " -R" << extentStr << " \"" << fs::canonical(outlinePath).string() << "\" -Wthin,dimgray --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
-        }      
+        }
     }
     else if (plotCoast)
     {
@@ -2272,7 +2272,7 @@ namespace TsunamiPlot
 
     // Check if outline file exists
     if (fs::exists(outlinePath))
-    {      
+    {
         cout << "Using outline file: " << fs::canonical(outlinePath).string() << endl;
         // If file is binary plot with -bi2f
         if (Strings::tolower(outlinePath.extension().string()) == ".bin" || Strings::tolower(outlinePath.extension().string()) == ".bf2")
@@ -2283,7 +2283,7 @@ namespace TsunamiPlot
         {
           // Plot as text file, add -J and -R to match the grid
           scriptOfs << "gmt plot -JM10c -R" << extentStr << " \"" << fs::canonical(outlinePath).string() << "\" -Wthin,dimgray --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
-        }      
+        }
     }
     else if (plotCoast)
     {
@@ -2609,7 +2609,7 @@ namespace TsunamiPlot
 
     // Check if outline file exists
     if (fs::exists(outlinePath))
-    {      
+    {
         cout << "Using outline file: " << fs::canonical(outlinePath).string() << endl;
         // If file is binary plot with -bi2f
         if (Strings::tolower(outlinePath.extension().string()) == ".bin" || Strings::tolower(outlinePath.extension().string()) == ".bf2")
@@ -2620,7 +2620,7 @@ namespace TsunamiPlot
         {
           // Plot as text file, add -J and -R to match the grid
           scriptOfs << "gmt plot -JM10c -R" << extentStr << " \"" << fs::canonical(outlinePath).string() << "\" -Wthin,dimgray --FONT_ANNOT_PRIMARY=8p,Helvetica -Vq" << std::endl;
-        }      
+        }
     }
     else if (plotCoast)
     {
