@@ -8,13 +8,16 @@
 #include "tsunamiplot.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cctype>
 #include <cstdio>
 #include <filesystem>
 #include <iostream>
 #include <map>
+#include <mutex>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "cmd.h"
@@ -349,6 +352,47 @@ namespace TsunamiPlot
         << b3 << " orange " << b4 << " red L\n"
         << b4 << " red "    << maxZ << " darkred B\n"
         << "B darkblue\n"
+        << "F darkred\n"
+        << "N white\n";
+
+    ofs.close();
+
+    return palettePath;
+  }
+
+  /**
+   * @brief Create a wave-height palette for the elevation animations
+   * (plotElevationAnimation2D / plotElevationAnimationGlobe). Same shape as
+   * createMaxPaletteFile, but the low end is a mid blue close to the "globe"
+   * bathymetry palette's own deep-ocean tone (roughly 0/150/255) instead of
+   * the much darker/purpler "darkblue" -- since the animation always draws
+   * a bathymetry background underneath, "darkblue" made the just-touched
+   * ocean (the vast majority of visible pixels once the wave has propagated
+   * across the basin) look like a stark, disconnected overlay rather than a
+   * subtly-darker shade of the sea it is displacing. Kept as a separate
+   * function (not a shared tweak to createMaxPaletteFile) so zmax/vmax --
+   * which have no bathymetry background to blend with -- keep their
+   * existing, already-validated look.
+   */
+  fs::path createElevationPaletteFile(float maxZ = 1.0f)
+  {
+    fs::path palettePath = std::filesystem::temp_directory_path() / "elevation.cpt";
+
+    std::ofstream ofs(palettePath.string());
+
+    float b1 = maxZ * 0.10f;
+    float b2 = maxZ * 0.20f;
+    float b3 = maxZ * 0.40f;
+    float b4 = maxZ * 0.60f;
+
+    ofs << "# Elevation animation CPT 0-" << maxZ << "m -- white(0)->mid-blue->blue->yellow->orange->red->darkred\n"
+        << "0 white 0.01 25/120/195 L\n"
+        << "0.01 25/120/195 " << b1 << " blue L\n"
+        << b1 << " blue "   << b2 << " yellow L\n"
+        << b2 << " yellow " << b3 << " orange L\n"
+        << b3 << " orange " << b4 << " red L\n"
+        << b4 << " red "    << maxZ << " darkred B\n"
+        << "B 25/120/195\n"
         << "F darkred\n"
         << "N white\n";
 
@@ -3902,17 +3946,27 @@ namespace TsunamiPlot
     fileExt = ".sh";
 #endif
 
-    fs::path scriptPath = fs::temp_directory_path() / (fs::path(outputPath).stem().string() + "_map" + fileExt);
+    string sessionName = fs::path(outputPath).stem().string();
+    fs::path scriptPath = fs::temp_directory_path() / (sessionName + "_map" + fileExt);
     std::ofstream scriptOfs(scriptPath.string());
 
 #ifdef WIN32
     scriptOfs << "@echo off" << std::endl;
     scriptOfs << "set \"GMT_VERBOSE=quiet\"" << std::endl;
     scriptOfs << "set \"GMT_END_SHOW=off\"" << std::endl;
+    // GMT modern mode keys its session directory off the parent process's
+    // PID by default, not the gmt.exe subprocess's own PID -- when several
+    // frames are rendered concurrently (plot_threads > 1) from the same
+    // tsunamif1cuda/n2cuda process, they'd all collide on the same
+    // ~/.gmt/sessions/gmt_session.<PID> directory and corrupt each other's
+    // PostScript state. Giving each frame its own session name (derived
+    // from its own unique output basename) isolates them.
+    scriptOfs << "set \"GMT_SESSION_NAME=" << sessionName << "\"" << std::endl;
 #elif __linux__
     scriptOfs << "#!/bin/bash" << std::endl;
     scriptOfs << "export GMT_VERBOSE=quiet" << std::endl;
     scriptOfs << "export GMT_END_SHOW=off" << std::endl;
+    scriptOfs << "export GMT_SESSION_NAME=" << sessionName << std::endl;
 #endif
 
     scriptOfs << "gmt begin \"" << outputPath << "\" png E600" << std::endl;
@@ -3957,6 +4011,44 @@ namespace TsunamiPlot
   }
 
   /**
+   * @brief Run processFrame(idx) for idx in [0, frameCount) using a fixed
+   * pool of numThreads worker threads pulling indices from a shared atomic
+   * counter (dynamic work distribution). Frames are independent (each reads
+   * its own grid file and writes its own PNG/temp files, all named after
+   * that frame), so this is only safe/worthwhile where that holds -- not a
+   * general-purpose primitive for the single-image plot* functions.
+   */
+  template <typename Func>
+  static void runParallelFrames(size_t frameCount, int requestedThreads, Func &&processFrame)
+  {
+    if (frameCount == 0) return;
+
+    int numThreads = requestedThreads < 1 ? 1 : requestedThreads;
+    numThreads = static_cast<int>(std::min<size_t>(static_cast<size_t>(numThreads), frameCount));
+
+    if (numThreads <= 1)
+    {
+      for (size_t i = 0; i < frameCount; i++) processFrame(i);
+      return;
+    }
+
+    std::atomic<size_t> nextIndex{0};
+    std::vector<std::thread> pool;
+    for (int t = 0; t < numThreads; t++)
+    {
+      pool.emplace_back([&nextIndex, frameCount, &processFrame]()
+      {
+        size_t idx;
+        while ((idx = nextIndex.fetch_add(1)) < frameCount)
+        {
+          processFrame(idx);
+        }
+      });
+    }
+    for (auto &t : pool) t.join();
+  }
+
+  /**
    * @brief Render a scenario's elevation snapshot sequence as a titled/timestamped
    * 2D flat-map (Mercator) video, with a bathymetry/relief background
    * @param options Geo options
@@ -3966,6 +4058,9 @@ namespace TsunamiPlot
    * Optional: elev_prefix (default "elev"), elev_digits (default 5),
    * palette_max_z (default 1.0), animate_format/animate_fps/
    * animate_speed_factor/animate_out, animate_mask_thresh (default 0.03).
+   * plot_threads (default 4): number of frames rendered concurrently --
+   * each frame is an independent gmt/ffmpeg subprocess, so this can cut
+   * wall-clock time substantially on multi-core machines.
    * Bathymetry background: shown by default (unlike plotZMax's show_bathy,
    * which defaults to off) -- set show_bathy=false to disable. Uses the
    * scenario's own "grid" option, plus bathy_cpt/bathy_convention exactly as
@@ -3995,16 +4090,15 @@ namespace TsunamiPlot
       try { paletteMaxZ = std::stof(options.get("palette_max_z")); }
       catch (...) { cerr << "Warning: invalid palette_max_z value, using 1.0" << endl; }
     }
-    fs::path wavePalettePath = createMaxPaletteFile(paletteMaxZ);
+    fs::path wavePalettePath = createElevationPaletteFile(paletteMaxZ);
 
-    // createMaxPaletteFile's first breakpoint runs white(0) -> darkblue(1% of
-    // maxZ): fine for zmax (never near zero once touched), but an
-    // instantaneous elevation snapshot has tiny floating-point noise
+    // An instantaneous elevation snapshot has tiny floating-point noise
     // straddling zero everywhere the wave hasn't meaningfully arrived, which
-    // that narrow white/darkblue transition turns into visible speckle.
-    // Clip |elevation| below this threshold to NaN (renders as fully
-    // transparent, letting the bathymetry background show through) so calm,
-    // untouched ocean reads as clean background instead of noise.
+    // the palette's narrow white/mid-blue transition near 0 would otherwise
+    // turn into visible speckle. Clip |elevation| below this threshold to
+    // NaN (renders as fully transparent, letting the bathymetry background
+    // show through) so calm, untouched ocean reads as clean background
+    // instead of noise.
     float maskThresh = options.contains("animate_mask_thresh") ? options.getFloat("animate_mask_thresh") : 0.03f;
 
     // Bathymetry/relief background -- on by default for the animation (unlike
@@ -4057,17 +4151,32 @@ namespace TsunamiPlot
       coastRes = "f";
     }
 
-    cout << "Plotting " << frames.size() << " elevation frames from " << outputPath.string() << " ..." << endl;
+    int plotThreads = options.contains("plot_threads") ? options.getInt("plot_threads") : 4;
+    if (plotThreads < 1) plotThreads = 1;
+    size_t frameCount = frames.size();
+    plotThreads = static_cast<int>(std::min<size_t>(static_cast<size_t>(plotThreads), frameCount));
 
-    int plotted = 0;
-    for (auto &framePath : frames)
+    cout << "Plotting " << frameCount << " elevation frames from " << outputPath.string()
+         << " (" << plotThreads << " thread(s)) ..." << endl;
+
+    std::atomic<int> plotted{0};
+    std::mutex logMutex;
+
+    runParallelFrames(frameCount, plotThreads, [&](size_t idx)
     {
+      const fs::path &framePath = frames[idx];
+      {
+        std::lock_guard<std::mutex> lock(logMutex);
+        cout << "  Frame " << (idx + 1) << "/" << frameCount << ": " << framePath.filename().string() << endl;
+      }
+
       fs::path gridPath = framePath;
       Grid grid;
       if (loadGrid(grid, gridPath, options, true) == false)
       {
+        std::lock_guard<std::mutex> lock(logMutex);
         cerr << "Unable to load elevation frame " << framePath.string() << ", skipping." << endl;
-        continue;
+        return;
       }
 
       auto [x0, y0, xMax, yMax] = grid.extents();
@@ -4112,18 +4221,19 @@ namespace TsunamiPlot
 
 #ifndef _DEBUG
       try { fs::remove(scriptPath); }
-      catch (fs::filesystem_error &e) { cerr << "Error removing temporary script file: " << e.what() << endl; }
+      catch (fs::filesystem_error &e) { std::lock_guard<std::mutex> lock(logMutex); cerr << "Error removing temporary script file: " << e.what() << endl; }
       try { fs::remove(maskedPath); }
-      catch (fs::filesystem_error &e) { cerr << "Error removing temporary masked grid: " << e.what() << endl; }
+      catch (fs::filesystem_error &e) { std::lock_guard<std::mutex> lock(logMutex); cerr << "Error removing temporary masked grid: " << e.what() << endl; }
 #endif
 
       if (exitCode != 0)
       {
+        std::lock_guard<std::mutex> lock(logMutex);
         cerr << "Plot script failed for " << framePath.string() << " with exit code " << exitCode << endl;
-        continue;
+        return;
       }
-      plotted++;
-    }
+      plotted.fetch_add(1);
+    });
 
     if (plotted == 0)
     {
@@ -4187,17 +4297,23 @@ namespace TsunamiPlot
     fileExt = ".sh";
 #endif
 
-    fs::path scriptPath = fs::temp_directory_path() / (fs::path(outputPath).stem().string() + "_globe" + fileExt);
+    string sessionName = fs::path(outputPath).stem().string();
+    fs::path scriptPath = fs::temp_directory_path() / (sessionName + "_globe" + fileExt);
     std::ofstream scriptOfs(scriptPath.string());
 
 #ifdef WIN32
     scriptOfs << "@echo off" << std::endl;
     scriptOfs << "set \"GMT_VERBOSE=quiet\"" << std::endl;
     scriptOfs << "set \"GMT_END_SHOW=off\"" << std::endl;
+    // See the matching comment in createElevationMapScript: without a
+    // unique GMT_SESSION_NAME per frame, concurrent plot_threads > 1 runs
+    // collide on the same PID-keyed GMT session directory.
+    scriptOfs << "set \"GMT_SESSION_NAME=" << sessionName << "\"" << std::endl;
 #elif __linux__
     scriptOfs << "#!/bin/bash" << std::endl;
     scriptOfs << "export GMT_VERBOSE=quiet" << std::endl;
     scriptOfs << "export GMT_END_SHOW=off" << std::endl;
+    scriptOfs << "export GMT_SESSION_NAME=" << sessionName << std::endl;
 #endif
 
     string proj = "-JG" + std::to_string(lon) + "/" + std::to_string(lat) + "/" + globeWidth;
@@ -4219,7 +4335,12 @@ namespace TsunamiPlot
     // drops +t (but not +s) when no other frame annotation is requested.
     scriptOfs << "gmt basemap " << proj << " -Baf -B+t\"" << title << "\"+s\"" << subtitle << "\" --FONT_TITLE=16p,Helvetica-Bold,black --FONT_SUBTITLE=11p,black -Vq" << std::endl;
 
-    scriptOfs << "gmt colorbar -DjBR+w6c/0.4c+o1c/1c -C\"" << wavePalettePath << "\" -Baf+l\"Altura (m)\" --FONT_LABEL=10p,black --FONT_ANNOT_PRIMARY=8p,black -Vq" << std::endl;
+    // Uppercase -DJ (vs lowercase -Dj) places the scale OUTSIDE the map's
+    // bounding box instead of inside it -- required here because the globe
+    // is a circle inscribed in that box, so any "inside" placement (jBR,
+    // jMR, ...) still lands within the box itself and cuts across the
+    // circle's arc. -DJMR puts it outside, to the right of the globe.
+    scriptOfs << "gmt colorbar -DJMR+w6c/0.4c -C\"" << wavePalettePath << "\" -Baf+l\"Altura (m)\" --FONT_LABEL=10p,black --FONT_ANNOT_PRIMARY=8p,black -Vq" << std::endl;
 
     scriptOfs << "gmt end" << std::endl;
 
@@ -4237,7 +4358,8 @@ namespace TsunamiPlot
    * Required options: output, source (title), dt, elev_interval (as in
    * plotElevationAnimation2D). Optional: elev_prefix/elev_digits,
    * palette_max_z, animate_mask_thresh, animate_format/animate_fps/
-   * animate_speed_factor/animate_out (as in plotElevationAnimation2D).
+   * animate_speed_factor/animate_out, plot_threads (as in
+   * plotElevationAnimation2D).
    * Globe-specific, all optional:
    *   animate_bathy_source  "remote" (default) fetches @earth_relief_<res>;
    *                         "file" uses this scenario's own "grid" option.
@@ -4355,23 +4477,36 @@ namespace TsunamiPlot
       try { paletteMaxZ = std::stof(options.get("palette_max_z")); }
       catch (...) { cerr << "Warning: invalid palette_max_z value, using 1.0" << endl; }
     }
-    fs::path wavePalettePath = createMaxPaletteFile(paletteMaxZ);
+    fs::path wavePalettePath = createElevationPaletteFile(paletteMaxZ);
 
     float maskThresh = options.contains("animate_mask_thresh") ? options.getFloat("animate_mask_thresh") : 0.03f;
 
-    cout << "Plotting " << frames.size() << " globe elevation frames from " << outputPath.string() << " ..." << endl;
+    int plotThreads = options.contains("plot_threads") ? options.getInt("plot_threads") : 4;
+    if (plotThreads < 1) plotThreads = 1;
+    size_t frameCount = frames.size();
+    plotThreads = static_cast<int>(std::min<size_t>(static_cast<size_t>(plotThreads), frameCount));
 
-    int plotted = 0;
-    int frameNumber = 0;
-    for (auto &framePath : frames)
+    cout << "Plotting " << frameCount << " globe elevation frames from " << outputPath.string()
+         << " (" << plotThreads << " thread(s)) ..." << endl;
+
+    std::atomic<int> plotted{0};
+    std::mutex logMutex;
+
+    runParallelFrames(frameCount, plotThreads, [&](size_t idx)
     {
+      const fs::path &framePath = frames[idx];
+      {
+        std::lock_guard<std::mutex> lock(logMutex);
+        cout << "  Frame " << (idx + 1) << "/" << frameCount << ": " << framePath.filename().string() << endl;
+      }
+
       fs::path gridPath = framePath;
       Grid grid;
       if (loadGrid(grid, gridPath, options, true) == false)
       {
+        std::lock_guard<std::mutex> lock(logMutex);
         cerr << "Unable to load elevation frame " << framePath.string() << ", skipping." << endl;
-        frameNumber++;
-        continue;
+        return;
       }
 
       fs::path maskedPath = fs::temp_directory_path() / (gridPath.stem().string() + "_masked.grd");
@@ -4382,8 +4517,8 @@ namespace TsunamiPlot
         executeCommand(clipCmd.str(), false);
       }
 
-      double lon = centerLon - static_cast<double>(frameNumber) * degPerFrame;
-      double lat = centerLat + static_cast<double>(frameNumber) * latPerFrame;
+      double lon = centerLon - static_cast<double>(idx) * degPerFrame;
+      double lat = centerLat + static_cast<double>(idx) * latPerFrame;
 
       int frameIndex = parseFrameIndex(framePath.filename().string(), prefix, digits);
       string timestamp = formatElevationTimestamp(frameIndex, dt, interval);
@@ -4401,20 +4536,19 @@ namespace TsunamiPlot
 
 #ifndef _DEBUG
       try { fs::remove(scriptPath); }
-      catch (fs::filesystem_error &e) { cerr << "Error removing temporary script file: " << e.what() << endl; }
+      catch (fs::filesystem_error &e) { std::lock_guard<std::mutex> lock(logMutex); cerr << "Error removing temporary script file: " << e.what() << endl; }
       try { fs::remove(maskedPath); }
-      catch (fs::filesystem_error &e) { cerr << "Error removing temporary masked grid: " << e.what() << endl; }
+      catch (fs::filesystem_error &e) { std::lock_guard<std::mutex> lock(logMutex); cerr << "Error removing temporary masked grid: " << e.what() << endl; }
 #endif
-
-      frameNumber++;
 
       if (exitCode != 0)
       {
+        std::lock_guard<std::mutex> lock(logMutex);
         cerr << "Plot script failed for " << framePath.string() << " with exit code " << exitCode << endl;
-        continue;
+        return;
       }
-      plotted++;
-    }
+      plotted.fetch_add(1);
+    });
 
     if (plotted == 0)
     {
