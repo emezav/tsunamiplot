@@ -60,13 +60,6 @@ namespace TsunamiPlot
    * @param options Geo options
    */
   void plotElevationAnimation2D(geo::Options &options);
-
-  /**
-   * @brief Render a scenario's elevation snapshot sequence as a 3D oblique
-   * relief block video (bathymetry base, exaggerated wave surface on top)
-   * @param options Geo options
-   */
-  void plotElevationAnimation3D(geo::Options &options);
 }
 
 #endif // TSUNAMIPLOT_H
