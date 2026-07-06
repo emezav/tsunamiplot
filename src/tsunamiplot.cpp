@@ -4161,6 +4161,296 @@ namespace TsunamiPlot
     cout << "Animation saved to " << videoPath.string() << endl;
   }
 
+  /**
+   * @brief Create a rotating-globe elevation-frame plot script: shaded relief
+   * (grdimage -JG orthographic) with the masked wave-height grid on top.
+   * @param bathyPath Materialized local relief grid path (see plotElevationAnimationGlobe)
+   * @param intensPath Precomputed shading (grdgradient) grid path
+   * @param gridPath Masked elevation snapshot grid path for this frame
+   * @param wavePalettePath Wave-height color palette path
+   * @param lon Orthographic projection center longitude for this frame
+   * @param lat Orthographic projection center latitude for this frame
+   * @param globeWidth Physical width of the globe, e.g. "11c"
+   * @param title Plot title
+   * @param subtitle Plot subtitle (timestamp)
+   * @param outputPath Output PNG path, no extension
+   * @return fs::path Path to the created script file
+   */
+  fs::path createElevationGlobeScript(
+      string bathyPath, string intensPath, string gridPath, string wavePalettePath,
+      double lon, double lat, string globeWidth,
+      string title, string subtitle,
+      string outputPath)
+  {
+    string fileExt = ".bat";
+#ifdef __linux__
+    fileExt = ".sh";
+#endif
+
+    fs::path scriptPath = fs::temp_directory_path() / (fs::path(outputPath).stem().string() + "_globe" + fileExt);
+    std::ofstream scriptOfs(scriptPath.string());
+
+#ifdef WIN32
+    scriptOfs << "@echo off" << std::endl;
+    scriptOfs << "set \"GMT_VERBOSE=quiet\"" << std::endl;
+    scriptOfs << "set \"GMT_END_SHOW=off\"" << std::endl;
+#elif __linux__
+    scriptOfs << "#!/bin/bash" << std::endl;
+    scriptOfs << "export GMT_VERBOSE=quiet" << std::endl;
+    scriptOfs << "export GMT_END_SHOW=off" << std::endl;
+#endif
+
+    string proj = "-JG" + std::to_string(lon) + "/" + std::to_string(lat) + "/" + globeWidth;
+
+    scriptOfs << "gmt begin \"" << outputPath << "\" png E600" << std::endl;
+
+    // -X0 -Y0 pin the plot to the canvas origin -- otherwise GMT's default
+    // page margin pushes the globe (and the title above it) past the fixed
+    // canvas edge (same fix validated in this session's bash prototype).
+    scriptOfs << "gmt grdimage \"" << bathyPath << "\" -I\"" << intensPath << "\" " << proj << " -Cgeo -X0 -Y0 -Vq" << std::endl;
+
+    // -Q makes the masked (NaN) cells fully transparent -- see the note in
+    // plotElevationAnimation2D.
+    scriptOfs << "gmt grdimage \"" << gridPath << "\" " << proj << " -C\"" << wavePalettePath << "\" -Q -Vq" << std::endl;
+
+    scriptOfs << "gmt coast " << proj << " -Wthin,gray30 -Dl -Vq" << std::endl;
+
+    // -Baf is required for the title (+t) to actually render -- GMT silently
+    // drops +t (but not +s) when no other frame annotation is requested.
+    scriptOfs << "gmt basemap " << proj << " -Baf -B+t\"" << title << "\"+s\"" << subtitle << "\" --FONT_TITLE=16p,Helvetica-Bold,black --FONT_SUBTITLE=11p,black -Vq" << std::endl;
+
+    scriptOfs << "gmt colorbar -DjBR+w6c/0.4c+o1c/1c -C\"" << wavePalettePath << "\" -Baf+l\"Altura (m)\" --FONT_LABEL=10p,black --FONT_ANNOT_PRIMARY=8p,black -Vq" << std::endl;
+
+    scriptOfs << "gmt end" << std::endl;
+
+    scriptOfs.close();
+
+    return scriptPath;
+  }
+
+  /**
+   * @brief Render a scenario's elevation snapshot sequence as a rotating
+   * orthographic-globe video (far-field only -- not meaningful at
+   * near-field's bay scale)
+   * @param options Geo options
+   *
+   * Required options: output, source (title), dt, elev_interval (as in
+   * plotElevationAnimation2D). Optional: elev_prefix/elev_digits,
+   * palette_max_z, animate_mask_thresh, animate_format/animate_fps/
+   * animate_speed_factor/animate_out (as in plotElevationAnimation2D).
+   * Globe-specific, all optional:
+   *   animate_bathy_source  "remote" (default) fetches @earth_relief_<res>;
+   *                         "file" uses this scenario's own "grid" option.
+   *   animate_relief_res    Remote relief resolution (default "06m")
+   *   animate_center_lon/lat  View center at frame 0 (default: the elevation
+   *                         grid's own extent midpoint)
+   *   animate_target_lon/lat Rotate from the center towards this site by the
+   *                         last frame (e.g. the arrival site of interest),
+   *                         always travelling westward -- the same direction
+   *                         the far-field wave itself propagates. Overrides
+   *                         animate_rotate_deg when given.
+   *   animate_rotate_deg    Total degrees rotated over the whole movie
+   *                         (default 0 -- fixed view on the center)
+   *   animate_globe_width   Physical width of the globe (default "11c" --
+   *                         kept below the canvas height so the title above
+   *                         the globe is not clipped)
+   */
+  void plotElevationAnimationGlobe(geo::Options &options)
+  {
+    auto [inputPath, outputPath] = getPaths(options);
+
+    string title = options.get("source");
+
+    float dt = options.contains("dt") ? options.getFloat("dt") : 1.0f;
+    int interval = options.contains("elev_interval") ? options.getInt("elev_interval") : 1;
+    string prefix = options.contains("elev_prefix") ? options.get("elev_prefix") : "elev";
+    int digits = options.contains("elev_digits") ? options.getInt("elev_digits") : 5;
+
+    vector<fs::path> frames = findElevationFrames(outputPath, prefix, digits);
+    if (frames.empty())
+    {
+      cerr << "No " << prefix << " snapshot grids found in " << outputPath.string() << endl;
+      return;
+    }
+
+    // Region (for centering defaults only) derived from an elev frame, not
+    // from the relief source -- keeps this correct whether the relief is the
+    // scenario's own grid or a global remote dataset.
+    Grid regionGrid;
+    fs::path regionGridPath = frames.front();
+    if (loadGrid(regionGrid, regionGridPath, options, true) == false)
+    {
+      cerr << "Unable to load elevation frame " << regionGridPath.string() << " to determine the view region." << endl;
+      return;
+    }
+    auto [west, south, east, north] = regionGrid.extents();
+
+    double centerLon = options.contains("animate_center_lon") ? options.getFloat("animate_center_lon") : (west + east) / 2.0;
+    double centerLat = options.contains("animate_center_lat") ? options.getFloat("animate_center_lat") : (south + north) / 2.0;
+
+    double rotateDeg = options.contains("animate_rotate_deg") ? options.getFloat("animate_rotate_deg") : 0.0;
+    double latPerFrame = 0.0;
+
+    if (options.contains("animate_target_lon"))
+    {
+      double targetLon = options.getFloat("animate_target_lon");
+      double targetLat = options.contains("animate_target_lat") ? options.getFloat("animate_target_lat") : centerLat;
+
+      // Normalize the target so it lies at most one wrap west of the center,
+      // giving the shortest westward sweep -- the same direction the
+      // far-field wave itself travels.
+      while (targetLon > centerLon) targetLon -= 360.0;
+      while (targetLon <= centerLon - 360.0) targetLon += 360.0;
+
+      rotateDeg = centerLon - targetLon;
+      latPerFrame = (frames.size() > 0) ? (targetLat - centerLat) / static_cast<double>(frames.size()) : 0.0;
+    }
+
+    double degPerFrame = (frames.size() > 0) ? rotateDeg / static_cast<double>(frames.size()) : 0.0;
+
+    string globeWidth = options.contains("animate_globe_width") ? options.get("animate_globe_width") : "11c";
+
+    // Relief source: remote @earth_relief_<res> (global coverage, needed for
+    // any real rotation/target) or the scenario's own local bathymetry grid.
+    bool useRemote = Strings::tolower(options.get("animate_bathy_source")) != "file";
+    fs::path reliefPath;
+    if (useRemote)
+    {
+      string reliefRes = options.contains("animate_relief_res") ? options.get("animate_relief_res") : "06m";
+      reliefPath = fs::path("@earth_relief_" + reliefRes);
+    }
+    else
+    {
+      reliefPath = fs::path(options.get("grid"));
+      if (!fs::exists(reliefPath) && fs::exists(inputPath / reliefPath))
+      {
+        reliefPath = (inputPath / reliefPath).make_preferred();
+      }
+      if (!fs::exists(reliefPath))
+      {
+        cerr << "Bathymetry grid " << reliefPath.string() << " does not exist." << endl;
+        return;
+      }
+      reliefPath = fs::canonical(reliefPath);
+    }
+
+    // Materialize the relief and precompute its shading ONCE, shared by
+    // every frame -- both are view-independent. This also means every frame
+    // reads a local file only: no repeated remote-tile resolution per frame.
+    fs::path bathyLocalPath = fs::temp_directory_path() / "animate_globe_bathy.grd";
+    fs::path intensPath = fs::temp_directory_path() / "animate_globe_intens.grd";
+    {
+      std::ostringstream cutCmd;
+      cutCmd << "gmt grdcut \"" << reliefPath.string() << "\" -Rd -G\"" << bathyLocalPath.string() << "\"";
+      executeCommand(cutCmd.str(), false);
+
+      std::ostringstream gradCmd;
+      gradCmd << "gmt grdgradient \"" << bathyLocalPath.string() << "\" -Nt1 -A45 -G\"" << intensPath.string() << "\"";
+      executeCommand(gradCmd.str(), false);
+    }
+
+    float paletteMaxZ = 1.0f;
+    if (options.contains("palette_max_z"))
+    {
+      try { paletteMaxZ = std::stof(options.get("palette_max_z")); }
+      catch (...) { cerr << "Warning: invalid palette_max_z value, using 1.0" << endl; }
+    }
+    fs::path wavePalettePath = createMaxPaletteFile(paletteMaxZ);
+
+    float maskThresh = options.contains("animate_mask_thresh") ? options.getFloat("animate_mask_thresh") : 0.03f;
+
+    cout << "Plotting " << frames.size() << " globe elevation frames from " << outputPath.string() << " ..." << endl;
+
+    int plotted = 0;
+    int frameNumber = 0;
+    for (auto &framePath : frames)
+    {
+      fs::path gridPath = framePath;
+      Grid grid;
+      if (loadGrid(grid, gridPath, options, true) == false)
+      {
+        cerr << "Unable to load elevation frame " << framePath.string() << ", skipping." << endl;
+        frameNumber++;
+        continue;
+      }
+
+      fs::path maskedPath = fs::temp_directory_path() / (gridPath.stem().string() + "_masked.grd");
+      {
+        std::ostringstream clipCmd;
+        clipCmd << "gmt grdclip \"" << gridPath.string() << "\" -Si-" << maskThresh << "/" << maskThresh
+                << "/NaN -G\"" << maskedPath.string() << "\"";
+        executeCommand(clipCmd.str(), false);
+      }
+
+      double lon = centerLon - static_cast<double>(frameNumber) * degPerFrame;
+      double lat = centerLat + static_cast<double>(frameNumber) * latPerFrame;
+
+      int frameIndex = parseFrameIndex(framePath.filename().string(), prefix, digits);
+      string timestamp = formatElevationTimestamp(frameIndex, dt, interval);
+
+      fs::path outBase = gridPath;
+      outBase.replace_extension("");
+
+      fs::path scriptPath = createElevationGlobeScript(
+          bathyLocalPath.string(), intensPath.string(), maskedPath.string(), wavePalettePath.string(),
+          lon, lat, globeWidth,
+          title, timestamp,
+          outBase.string());
+
+      int exitCode = executeCommand(scriptPath.string(), true);
+
+#ifndef _DEBUG
+      try { fs::remove(scriptPath); }
+      catch (fs::filesystem_error &e) { cerr << "Error removing temporary script file: " << e.what() << endl; }
+      try { fs::remove(maskedPath); }
+      catch (fs::filesystem_error &e) { cerr << "Error removing temporary masked grid: " << e.what() << endl; }
+#endif
+
+      frameNumber++;
+
+      if (exitCode != 0)
+      {
+        cerr << "Plot script failed for " << framePath.string() << " with exit code " << exitCode << endl;
+        continue;
+      }
+      plotted++;
+    }
+
+    if (plotted == 0)
+    {
+      cerr << "No elevation frames were plotted successfully." << endl;
+      return;
+    }
+
+    string fps = options.contains("animate_fps") ? options.get("animate_fps") : "30";
+    string speedFactor = options.contains("animate_speed_factor") ? options.get("animate_speed_factor") : "4.0";
+    string format = options.contains("animate_format") ? options.get("animate_format") : "mp4";
+    string outName = (options.contains("animate_out") ? options.get("animate_out") : prefix) + "_globe";
+
+    char digitFmt[16];
+    snprintf(digitFmt, sizeof(digitFmt), "%%0%dd", digits);
+
+    fs::path pattern = outputPath / (prefix + string(digitFmt) + ".png");
+    fs::path videoPath = outputPath / (outName + "." + format);
+
+    std::ostringstream ffmpegCmd;
+    ffmpegCmd << "ffmpeg -y -i \"" << pattern.string() << "\""
+              << " -c:v libx264 -crf 23 -r " << fps
+              << " -c:a none -pix_fmt yuv420p"
+              << " -filter:v \"pad=ceil(iw/2)*2:ceil(ih/2)*2,setpts=" << speedFactor << "*PTS\""
+              << " \"" << videoPath.string() << "\"";
+
+    cout << "Encoding " << plotted << " frames to " << videoPath.string() << " ..." << endl;
+
+    int ffmpegExit = executeCommand(ffmpegCmd.str(), true);
+    if (ffmpegExit != 0)
+    {
+      cerr << "ffmpeg failed with exit code " << ffmpegExit << endl;
+      return;
+    }
+
+    cout << "Animation saved to " << videoPath.string() << endl;
+  }
 
 }
 

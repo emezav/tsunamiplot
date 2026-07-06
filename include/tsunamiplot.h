@@ -60,6 +60,13 @@ namespace TsunamiPlot
    * @param options Geo options
    */
   void plotElevationAnimation2D(geo::Options &options);
+
+  /**
+   * @brief Render a scenario's elevation snapshot sequence as a rotating
+   * orthographic-globe video (far-field only)
+   * @param options Geo options
+   */
+  void plotElevationAnimationGlobe(geo::Options &options);
 }
 
 #endif // TSUNAMIPLOT_H
