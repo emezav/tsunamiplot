@@ -7,6 +7,9 @@
 
 #include "tsunamiplot.h"
 
+#include <algorithm>
+#include <cctype>
+#include <cstdio>
 #include <filesystem>
 #include <iostream>
 #include <sstream>
@@ -3718,6 +3721,506 @@ namespace TsunamiPlot
       return;
     }
     cout << "Propagation " << propPath.replace_extension("png").string() << endl;
+  }
+
+  /**
+   * @brief Find elevation snapshot grids in a directory
+   * @param dir Directory to search
+   * @param prefix Filename prefix (e.g. "elev" or "elr3")
+   * @param digits Number of zero-padded digits in the frame index
+   * @return vector<fs::path> Sorted list of matching frame file paths
+   */
+  vector<fs::path> findElevationFrames(const fs::path &dir, const string &prefix, int digits)
+  {
+    vector<fs::path> frames;
+
+    if (!fs::exists(dir) || !fs::is_directory(dir))
+    {
+      return frames;
+    }
+
+    for (auto &entry : fs::directory_iterator(dir))
+    {
+      if (!entry.is_regular_file())
+      {
+        continue;
+      }
+
+      string fname = entry.path().filename().string();
+      if (fname.size() <= prefix.size() + static_cast<size_t>(digits))
+      {
+        continue;
+      }
+      if (fname.compare(0, prefix.size(), prefix) != 0)
+      {
+        continue;
+      }
+
+      bool numericOk = true;
+      for (int i = 0; i < digits; i++)
+      {
+        if (!std::isdigit(static_cast<unsigned char>(fname[prefix.size() + i])))
+        {
+          numericOk = false;
+          break;
+        }
+      }
+      if (!numericOk)
+      {
+        continue;
+      }
+
+      // Only accept known georeferenced grid extensions -- skips sibling
+      // .hdr/.prj/.png files and the original (non-georeferenced) elr .dat.
+      string ext = fname.substr(prefix.size() + digits);
+      if (ext != ".bil" && ext != ".asc" && ext != ".flt" && ext != ".grd")
+      {
+        continue;
+      }
+
+      frames.push_back(entry.path());
+    }
+
+    std::sort(frames.begin(), frames.end());
+
+    return frames;
+  }
+
+  /**
+   * @brief Extract the zero-padded numeric frame index from a snapshot filename
+   * @param filename File name (e.g. "elev00042.bil")
+   * @param prefix Filename prefix
+   * @param digits Number of digits in the index
+   * @return int Frame index, or -1 if the filename does not match
+   */
+  int parseFrameIndex(const string &filename, const string &prefix, int digits)
+  {
+    if (filename.size() <= prefix.size() + static_cast<size_t>(digits))
+    {
+      return -1;
+    }
+    if (filename.compare(0, prefix.size(), prefix) != 0)
+    {
+      return -1;
+    }
+
+    try
+    {
+      return std::stoi(filename.substr(prefix.size(), digits));
+    }
+    catch (...)
+    {
+      return -1;
+    }
+  }
+
+  /**
+   * @brief Format an elapsed-time subtitle "+HH:MM:00" from a frame index
+   * @param frameIndex Frame index (0-based)
+   * @param dt Simulation dt (seconds/step)
+   * @param interval Steps between snapshots
+   * @return string Formatted timestamp
+   */
+  string formatElevationTimestamp(int frameIndex, float dt, int interval)
+  {
+    // dt may be sub-second (near-field scenarios commonly use dt < 1s), so
+    // the multiplication must stay in floating point -- truncating dt to an
+    // int first would silently zero every timestamp for those scenarios.
+    int seconds = static_cast<int>(static_cast<float>(frameIndex) * dt * static_cast<float>(interval));
+    int hours = seconds / 3600;
+    int minutes = (seconds / 60) % 60;
+
+    char buf[16];
+    snprintf(buf, sizeof(buf), "+%02d:%02d:00", hours, minutes);
+
+    return string(buf);
+  }
+
+  /**
+   * @brief Render a scenario's elevation snapshot sequence as a titled/timestamped
+   * 2D flat-map (Mercator) video
+   * @param options Geo options
+   *
+   * Required options: output (result directory), source (title), dt
+   * (seconds/step), elev_interval (steps between snapshots).
+   * Optional: elev_prefix (default "elev"), elev_digits (default 5),
+   * palette_max_z (default 1.0), animate_format/animate_fps/
+   * animate_speed_factor/animate_out.
+   */
+  void plotElevationAnimation2D(geo::Options &options)
+  {
+    auto [inputPath, outputPath] = getPaths(options);
+
+    string title = options.get("source");
+
+    float dt = options.contains("dt") ? options.getFloat("dt") : 1.0f;
+    int interval = options.contains("elev_interval") ? options.getInt("elev_interval") : 1;
+    string prefix = options.contains("elev_prefix") ? options.get("elev_prefix") : "elev";
+    int digits = options.contains("elev_digits") ? options.getInt("elev_digits") : 5;
+
+    vector<fs::path> frames = findElevationFrames(outputPath, prefix, digits);
+    if (frames.empty())
+    {
+      cerr << "No " << prefix << " snapshot grids found in " << outputPath.string() << endl;
+      return;
+    }
+
+    float paletteMaxZ = 1.0f;
+    if (options.contains("palette_max_z"))
+    {
+      try { paletteMaxZ = std::stof(options.get("palette_max_z")); }
+      catch (...) { cerr << "Warning: invalid palette_max_z value, using 1.0" << endl; }
+    }
+    fs::path palettePath = createMaxPaletteFile(paletteMaxZ);
+
+    // createMaxPaletteFile's first breakpoint runs white(0) -> darkblue(1% of
+    // maxZ): fine for zmax (never near zero once touched), but an
+    // instantaneous elevation snapshot has tiny floating-point noise
+    // straddling zero everywhere the wave hasn't meaningfully arrived, which
+    // that narrow white/darkblue transition turns into visible speckle.
+    // Clip |elevation| below this threshold to NaN (renders as the palette's
+    // "N" color, same as land) so calm, untouched ocean reads as clean
+    // background instead of noise.
+    float maskThresh = options.contains("animate_mask_thresh") ? options.getFloat("animate_mask_thresh") : 0.03f;
+
+    cout << "Plotting " << frames.size() << " elevation frames from " << outputPath.string() << " ..." << endl;
+
+    int plotted = 0;
+    for (auto &framePath : frames)
+    {
+      fs::path gridPath = framePath;
+      Grid grid;
+      if (loadGrid(grid, gridPath, options, true) == false)
+      {
+        cerr << "Unable to load elevation frame " << framePath.string() << ", skipping." << endl;
+        continue;
+      }
+
+      fs::path maskedPath = fs::temp_directory_path() / (gridPath.stem().string() + "_masked.grd");
+      {
+        std::ostringstream clipCmd;
+        clipCmd << "gmt grdclip \"" << gridPath.string() << "\" -Si-" << maskThresh << "/" << maskThresh
+                << "/NaN -G\"" << maskedPath.string() << "\"";
+        executeCommand(clipCmd.str(), false);
+      }
+
+      int frameIndex = parseFrameIndex(framePath.filename().string(), prefix, digits);
+      string timestamp = formatElevationTimestamp(frameIndex, dt, interval);
+
+      fs::path outBase = gridPath;
+      outBase.replace_extension("");
+
+      fs::path scriptPath = createGridPlotScript(maskedPath.string(), palettePath.string(), title, timestamp, outBase.string());
+
+      int exitCode = executeCommand(scriptPath.string(), true);
+
+#ifndef _DEBUG
+      try { fs::remove(scriptPath); }
+      catch (fs::filesystem_error &e) { cerr << "Error removing temporary script file: " << e.what() << endl; }
+      try { fs::remove(maskedPath); }
+      catch (fs::filesystem_error &e) { cerr << "Error removing temporary masked grid: " << e.what() << endl; }
+#endif
+
+      if (exitCode != 0)
+      {
+        cerr << "Plot script failed for " << framePath.string() << " with exit code " << exitCode << endl;
+        continue;
+      }
+      plotted++;
+    }
+
+    if (plotted == 0)
+    {
+      cerr << "No elevation frames were plotted successfully." << endl;
+      return;
+    }
+
+    string fps = options.contains("animate_fps") ? options.get("animate_fps") : "30";
+    string speedFactor = options.contains("animate_speed_factor") ? options.get("animate_speed_factor") : "4.0";
+    string format = options.contains("animate_format") ? options.get("animate_format") : "mp4";
+    string outName = options.contains("animate_out") ? options.get("animate_out") : prefix;
+
+    char digitFmt[16];
+    snprintf(digitFmt, sizeof(digitFmt), "%%0%dd", digits);
+
+    fs::path pattern = outputPath / (prefix + string(digitFmt) + ".png");
+    fs::path videoPath = outputPath / (outName + "." + format);
+
+    std::ostringstream ffmpegCmd;
+    ffmpegCmd << "ffmpeg -y -i \"" << pattern.string() << "\""
+              << " -c:v libx264 -crf 23 -r " << fps
+              << " -c:a none -pix_fmt yuv420p"
+              << " -filter:v \"pad=ceil(iw/2)*2:ceil(ih/2)*2,setpts=" << speedFactor << "*PTS\""
+              << " \"" << videoPath.string() << "\"";
+
+    cout << "Encoding " << plotted << " frames to " << videoPath.string() << " ..." << endl;
+
+    int ffmpegExit = executeCommand(ffmpegCmd.str(), true);
+    if (ffmpegExit != 0)
+    {
+      cerr << "ffmpeg failed with exit code " << ffmpegExit << endl;
+      return;
+    }
+
+    cout << "Animation saved to " << videoPath.string() << endl;
+  }
+
+  /**
+   * @brief Create a 3D perspective elevation-frame plot script: bathymetry
+   * relief base (grdview) plus a masked, vertically exaggerated wave-height
+   * surface on top. The wave surface's shape comes from the exaggerated
+   * grid, but its color comes from the true (unscaled) values via -G drape.
+   * @param bathyPath Bathymetry grid path
+   * @param elevPath Elevation snapshot grid path for this frame
+   * @param bathyCptPath Bathymetry color palette path
+   * @param waveCptPath Wave-height color palette path
+   * @param region GMT -R string: "west/east/south/north/zmin/zmax"
+   * @param proj GMT projection string: "-JM<width> -JZ<height>"
+   * @param persp GMT perspective string: "-p<azimuth>/<elevation>"
+   * @param maskThresh Mask |elevation| below this value (meters) to transparent
+   * @param waveExag Vertical exaggeration applied to the wave surface only
+   * @param title Plot title
+   * @param subtitle Plot subtitle (timestamp)
+   * @param outputPath Output PNG path, no extension
+   * @return fs::path Path to the created script file
+   */
+  fs::path createElevationSurfaceScript(
+      string bathyPath, string elevPath,
+      string bathyCptPath, string waveCptPath,
+      string region, string proj, string persp,
+      float maskThresh, float waveExag,
+      string title, string subtitle,
+      string outputPath)
+  {
+    string fileExt = ".bat";
+#ifdef __linux__
+    fileExt = ".sh";
+#endif
+
+    fs::path scriptPath = fs::temp_directory_path() / (fs::path(outputPath).stem().string() + "_surf" + fileExt);
+    std::ofstream scriptOfs(scriptPath.string());
+
+#ifdef WIN32
+    scriptOfs << "@echo off" << std::endl;
+    scriptOfs << "set \"GMT_VERBOSE=quiet\"" << std::endl;
+    scriptOfs << "set \"GMT_END_SHOW=off\"" << std::endl;
+#elif __linux__
+    scriptOfs << "#!/bin/bash" << std::endl;
+    scriptOfs << "export GMT_VERBOSE=quiet" << std::endl;
+    scriptOfs << "export GMT_END_SHOW=off" << std::endl;
+#endif
+
+    fs::path maskedPath = fs::temp_directory_path() / (fs::path(elevPath).stem().string() + "_masked.grd");
+    fs::path exagPath = fs::temp_directory_path() / (fs::path(elevPath).stem().string() + "_exag.grd");
+
+    // Mask near-zero elevation to NaN so the bathymetry relief shows through
+    // wherever the wave has no real signal yet (same trick as plotDeform).
+    scriptOfs << "gmt grdclip \"" << elevPath << "\" -Si-" << maskThresh << "/" << maskThresh << "/NaN -G\"" << maskedPath.string() << "\" -Vq" << std::endl;
+    scriptOfs << "gmt grdmath \"" << maskedPath.string() << "\" " << waveExag << " MUL = \"" << exagPath.string() << "\"" << std::endl;
+
+    scriptOfs << "gmt begin \"" << outputPath << "\" png E600" << std::endl;
+
+    scriptOfs << "gmt grdview \"" << bathyPath << "\" -R" << region << " " << proj << " " << persp
+              << " -Qs -C\"" << bathyCptPath << "\" -Wfaint,white -X0 -Y0 -Vq" << std::endl;
+
+    scriptOfs << "gmt grdview \"" << exagPath.string() << "\" -G\"" << maskedPath.string() << "\" -R" << region << " " << proj << " " << persp
+              << " -Qi100 -C\"" << waveCptPath << "\" -Vq" << std::endl;
+
+    // -Baf is required for the title (+t) to actually render -- GMT silently
+    // drops +t (but not +s) when no other frame annotation is requested.
+    scriptOfs << "gmt basemap -R" << region << " " << proj << " " << persp << " -Baf";
+    if (title.length())
+    {
+      scriptOfs << " -B+t\"" << title << "\"";
+      if (subtitle.length())
+      {
+        scriptOfs << "+s\"" << subtitle << "\"";
+      }
+    }
+    scriptOfs << " --FONT_TITLE=14p --FONT_SUBTITLE=10p -Vq" << std::endl;
+
+    scriptOfs << "gmt colorbar -DjBR+w6c/0.4c+o1c/1c -C\"" << waveCptPath << "\" -Baf+l\"Altura (m)\" -Vq" << std::endl;
+
+    scriptOfs << "gmt end" << std::endl;
+
+#ifndef _DEBUG
+#ifdef WIN32
+    scriptOfs << "del \"" << maskedPath.string() << "\"" << std::endl;
+    scriptOfs << "del \"" << exagPath.string() << "\"" << std::endl;
+#elif __linux__
+    scriptOfs << "rm -f \"" << maskedPath.string() << "\" \"" << exagPath.string() << "\"" << std::endl;
+#endif
+#endif
+
+    scriptOfs.close();
+
+    return scriptPath;
+  }
+
+  /**
+   * @brief Render a scenario's elevation snapshot sequence as a 3D oblique
+   * relief block video (bathymetry base, exaggerated wave surface on top)
+   * @param options Geo options
+   *
+   * Required options: output, source (title), dt, elev_interval, grid
+   * (bathymetry). Optional: elev_prefix/elev_digits (as in the 2D version),
+   * palette_max_z, bathy_cpt, animate_z_min/animate_z_max (default
+   * -10000/6000), animate_jz (default "6c"), animate_az/animate_el (default
+   * 210/25), animate_wave_exag (default 300), animate_mask_thresh (default
+   * 0.03), animate_format/animate_fps/animate_speed_factor/animate_out.
+   */
+  void plotElevationAnimation3D(geo::Options &options)
+  {
+    auto [inputPath, outputPath] = getPaths(options);
+
+    string title = options.get("source");
+
+    float dt = options.contains("dt") ? options.getFloat("dt") : 1.0f;
+    int interval = options.contains("elev_interval") ? options.getInt("elev_interval") : 1;
+    string prefix = options.contains("elev_prefix") ? options.get("elev_prefix") : "elev";
+    int digits = options.contains("elev_digits") ? options.getInt("elev_digits") : 5;
+
+    vector<fs::path> frames = findElevationFrames(outputPath, prefix, digits);
+    if (frames.empty())
+    {
+      cerr << "No " << prefix << " snapshot grids found in " << outputPath.string() << endl;
+      return;
+    }
+
+    fs::path bathyPath = fs::path(options.get("grid"));
+    if (!fs::exists(bathyPath) && fs::exists(inputPath / bathyPath))
+    {
+      bathyPath = (inputPath / bathyPath).make_preferred();
+    }
+    if (!fs::exists(bathyPath))
+    {
+      cerr << "Bathymetry grid " << bathyPath.string() << " does not exist." << endl;
+      return;
+    }
+    bathyPath = fs::canonical(bathyPath);
+
+    Grid bathyGrid;
+    if (loadGrid(bathyGrid, bathyPath, options, true) == false)
+    {
+      cerr << "Unable to load bathymetry grid from " << bathyPath.string() << endl;
+      return;
+    }
+
+    auto [x0, y0, xMax, yMax] = bathyGrid.extents();
+
+    float zMin = options.contains("animate_z_min") ? options.getFloat("animate_z_min") : -10000.0f;
+    float zMax = options.contains("animate_z_max") ? options.getFloat("animate_z_max") : 6000.0f;
+    string jz = options.contains("animate_jz") ? options.get("animate_jz") : "6c";
+    string az = options.contains("animate_az") ? options.get("animate_az") : "210";
+    string el = options.contains("animate_el") ? options.get("animate_el") : "25";
+    float waveExag = options.contains("animate_wave_exag") ? options.getFloat("animate_wave_exag") : 300.0f;
+    float maskThresh = options.contains("animate_mask_thresh") ? options.getFloat("animate_mask_thresh") : 0.03f;
+
+    string bathyCpt = options.get("bathy_cpt");
+    if (bathyCpt.empty())
+    {
+      bathyCpt = "globe";
+    }
+
+    std::ostringstream regionOss;
+    regionOss << x0 << "/" << xMax << "/" << y0 << "/" << yMax << "/" << zMin << "/" << zMax;
+    string region = regionOss.str();
+
+    string proj = "-JM10c -JZ" + jz;
+    string persp = "-p" + az + "/" + el;
+
+    // Build the bathymetry CPT once, shared by all frames.
+    fs::path bathyCptPath = fs::temp_directory_path() / "animate_bathy.cpt";
+    {
+      std::ostringstream cptCmd;
+      cptCmd << "gmt makecpt -C" << bathyCpt << " -D > \"" << bathyCptPath.string() << "\"";
+      executeCommand(cptCmd.str(), false);
+    }
+
+    float paletteMaxZ = 1.0f;
+    if (options.contains("palette_max_z"))
+    {
+      try { paletteMaxZ = std::stof(options.get("palette_max_z")); }
+      catch (...) { cerr << "Warning: invalid palette_max_z value, using 1.0" << endl; }
+    }
+    fs::path wavePalettePath = createMaxPaletteFile(paletteMaxZ);
+
+    cout << "Plotting " << frames.size() << " 3D elevation frames from " << outputPath.string() << " ..." << endl;
+
+    int plotted = 0;
+    for (auto &framePath : frames)
+    {
+      fs::path gridPath = framePath;
+      Grid grid;
+      if (loadGrid(grid, gridPath, options, true) == false)
+      {
+        cerr << "Unable to load elevation frame " << framePath.string() << ", skipping." << endl;
+        continue;
+      }
+
+      int frameIndex = parseFrameIndex(framePath.filename().string(), prefix, digits);
+      string timestamp = formatElevationTimestamp(frameIndex, dt, interval);
+
+      fs::path outBase = gridPath;
+      outBase.replace_extension("");
+
+      fs::path scriptPath = createElevationSurfaceScript(
+          bathyPath.string(), gridPath.string(),
+          bathyCptPath.string(), wavePalettePath.string(),
+          region, proj, persp,
+          maskThresh, waveExag,
+          title, timestamp,
+          outBase.string());
+
+      int exitCode = executeCommand(scriptPath.string(), true);
+
+#ifndef _DEBUG
+      try { fs::remove(scriptPath); }
+      catch (fs::filesystem_error &e) { cerr << "Error removing temporary script file: " << e.what() << endl; }
+#endif
+
+      if (exitCode != 0)
+      {
+        cerr << "Plot script failed for " << framePath.string() << " with exit code " << exitCode << endl;
+        continue;
+      }
+      plotted++;
+    }
+
+    if (plotted == 0)
+    {
+      cerr << "No elevation frames were plotted successfully." << endl;
+      return;
+    }
+
+    string fps = options.contains("animate_fps") ? options.get("animate_fps") : "30";
+    string speedFactor = options.contains("animate_speed_factor") ? options.get("animate_speed_factor") : "4.0";
+    string format = options.contains("animate_format") ? options.get("animate_format") : "mp4";
+    string outName = (options.contains("animate_out") ? options.get("animate_out") : prefix) + "_3d";
+
+    char digitFmt[16];
+    snprintf(digitFmt, sizeof(digitFmt), "%%0%dd", digits);
+
+    fs::path pattern = outputPath / (prefix + string(digitFmt) + ".png");
+    fs::path videoPath = outputPath / (outName + "." + format);
+
+    std::ostringstream ffmpegCmd;
+    ffmpegCmd << "ffmpeg -y -i \"" << pattern.string() << "\""
+              << " -c:v libx264 -crf 23 -r " << fps
+              << " -c:a none -pix_fmt yuv420p"
+              << " -filter:v \"pad=ceil(iw/2)*2:ceil(ih/2)*2,setpts=" << speedFactor << "*PTS\""
+              << " \"" << videoPath.string() << "\"";
+
+    cout << "Encoding " << plotted << " frames to " << videoPath.string() << " ..." << endl;
+
+    int ffmpegExit = executeCommand(ffmpegCmd.str(), true);
+    if (ffmpegExit != 0)
+    {
+      cerr << "ffmpeg failed with exit code " << ffmpegExit << endl;
+      return;
+    }
+
+    cout << "Animation saved to " << videoPath.string() << endl;
   }
 
 }
