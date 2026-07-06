@@ -12,6 +12,7 @@
 #include <cctype>
 #include <cstdio>
 #include <filesystem>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <mutex>
@@ -19,6 +20,12 @@
 #include <string>
 #include <thread>
 #include <vector>
+
+#ifdef WIN32
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
 
 #include "cmd.h"
 #include "gauges.h"
@@ -47,6 +54,21 @@ namespace TsunamiPlot
     SUCCESS = 0,  /*!< OK */
     FAILURE = -1, /*!< Operation was not successful. */
   };
+
+  /**
+   * @brief Current process id, as a string. Used to namespace shared temp
+   * files (palettes, bathy layers) so that two animate/plot invocations
+   * running concurrently (e.g. two nested grid levels animated in
+   * parallel) don't clobber each other's temp files mid-render.
+   */
+  string currentProcessId()
+  {
+#ifdef WIN32
+    return std::to_string(_getpid());
+#else
+    return std::to_string(getpid());
+#endif
+  }
 
   // Forward declarations
   /**
@@ -335,7 +357,7 @@ namespace TsunamiPlot
   // Default maxZ = 1.0 (near-field N2).  Far-field F1 scenarios set palette_max_z = 7.
   fs::path createMaxPaletteFile(float maxZ = 1.0f)
   {
-    fs::path palettePath = std::filesystem::temp_directory_path() / "max.cpt";
+    fs::path palettePath = std::filesystem::temp_directory_path() / ("max_" + currentProcessId() + ".cpt");
 
     std::ofstream ofs(palettePath.string());
 
@@ -376,7 +398,7 @@ namespace TsunamiPlot
    */
   fs::path createElevationPaletteFile(float maxZ = 1.0f)
   {
-    fs::path palettePath = std::filesystem::temp_directory_path() / "elevation.cpt";
+    fs::path palettePath = std::filesystem::temp_directory_path() / ("elevation_" + currentProcessId() + ".cpt");
 
     std::ofstream ofs(palettePath.string());
 
@@ -3939,7 +3961,8 @@ namespace TsunamiPlot
       string title, string subtitle,
       string extentStr, float scaleLengthKm, double y0,
       bool plotCoast, string coastRes,
-      string outputPath)
+      string outputPath,
+      string landPath, string landPalettePath)
   {
     string fileExt = ".bat";
 #ifdef __linux__
@@ -3973,7 +3996,20 @@ namespace TsunamiPlot
 
     if (!bathyPath.empty())
     {
-      scriptOfs << "gmt grdimage -JM15c -R" << extentStr << " \"" << bathyPath << "\" -C\"" << bathyPalettePath << "\" -Vq" << std::endl;
+      // In "divided palette" mode (bathy_cpt_fit), bathyPath is the ocean-only
+      // grid (land clipped to NaN) and landPath is the land-only grid (ocean
+      // clipped to NaN), each with its own palette fit to its own data range
+      // -- same two-layer approach as plotBathy/createBathyPlotScript, so
+      // land renders with proper elevation colors instead of being painted
+      // by an ocean-depth palette (or, before that grid was masked at all,
+      // by the wave palette's flat background color). -Q is required here
+      // since each layer only covers part of the grid.
+      string bathyQ = landPath.empty() ? "" : " -Q";
+      scriptOfs << "gmt grdimage -JM15c -R" << extentStr << " \"" << bathyPath << "\" -C\"" << bathyPalettePath << "\"" << bathyQ << " -Vq" << std::endl;
+      if (!landPath.empty())
+      {
+        scriptOfs << "gmt grdimage -JM15c -R" << extentStr << " \"" << landPath << "\" -C\"" << landPalettePath << "\" -Q -Vq" << std::endl;
+      }
     }
 
     // -Q makes NaN cells (the masked, "no real signal yet" areas) fully
@@ -4108,6 +4144,8 @@ namespace TsunamiPlot
     bool showBathy = Strings::tolower(options.get("show_bathy")) != "false";
     fs::path bathyPath;
     fs::path bathyPalettePath;
+    fs::path landPath;
+    fs::path landPalettePath;
     if (showBathy)
     {
       bathyPath = fs::path(options.get("grid"));
@@ -4123,24 +4161,95 @@ namespace TsunamiPlot
       else
       {
         bathyPath = fs::canonical(bathyPath);
-        string bathyCpt = options.get("bathy_cpt");
-        if (bathyCpt.empty() || !std::all_of(bathyCpt.begin(), bathyCpt.end(),
-            [](char c){ return std::isalnum((unsigned char)c) || c == '_' || c == '-'; }))
-        {
-          bathyCpt = "gray";
-        }
         bool bathyInvert = Strings::tolower(options.get("bathy_convention")) == "tunami";
-        bathyPalettePath = fs::temp_directory_path() / "animate_bathy.cpt";
-        std::ostringstream cptCmd;
-        if (bathyCpt == "gray")
+        bool bathyCptFit = Strings::tolower(options.get("bathy_cpt_fit")) == "true";
+
+        // Unique per bathy grid (and thus per concurrent animate invocation):
+        // without this, two animate runs for different nested grid levels
+        // (e.g. grid3 and grid4) started in parallel would all write to the
+        // same fixed "animate_bathy_*" temp names and clobber each other's
+        // ocean/land grids and palettes mid-render -- the same class of bug
+        // already fixed for GMT's per-frame session directories.
+        string bathyTag = bathyPath.stem().string() + "_" + std::to_string(std::hash<string>{}(bathyPath.string()) % 1000000) + "_" + currentProcessId();
+
+        if (bathyCptFit)
         {
-          cptCmd << "gmt grd2cpt \"" << bathyPath.string() << "\" -Cgray" << (bathyInvert ? " -I" : "") << " -D > \"" << bathyPalettePath.string() << "\"";
+          // Divided two-layer palette, BOTH layers locally fit (grd2cpt) to
+          // this specific grid's own data range -- not just land. The
+          // mismatch isn't land-vs-ocean, it's grid scale: an inner/finer
+          // grid can be a shallow coastal bay only a few meters deep, which
+          // under the FIXED "globe" depth anchors (calibrated for ocean-
+          // basin scale, thousands of meters) falls entirely into the
+          // single palest/shallowest band, rendering as flat near-white --
+          // exactly the same problem the fixed palette has with land at
+          // this scale. Grid 1 (ocean-basin/Andes scale) doesn't need this
+          // -- its own range already spans the fixed palette's full extent
+          // -- which is why bathy_cpt_fit defaults off and is only turned
+          // on per-invocation for finer grids.
+          string bathyCpt = options.get("bathy_cpt");
+          if (bathyCpt.empty()) bathyCpt = "globe";
+
+          fs::path plotGridPath = bathyPath;
+          if (bathyInvert)
+          {
+            Grid bathyGrid;
+            fs::path bathyGridPath = bathyPath;
+            if (loadGrid(bathyGrid, bathyGridPath, options))
+            {
+              auto [bRows, bCols] = bathyGrid.dimensions();
+              float nd = static_cast<float>(bathyGrid.noDataValue());
+              for (int i = 0; i < bRows; i++)
+                for (int j = 0; j < bCols; j++)
+                  if (bathyGrid(i, j) != nd)
+                    bathyGrid(i, j) = -bathyGrid(i, j);
+
+              fs::path negatedPath = fs::temp_directory_path() / (bathyTag + "_neg.bil");
+              if (geo::SaveGrid(bathyGrid, negatedPath.string(), GridFormat::ESRI_FLOAT) == geo::geoStatus::SUCCESS)
+              {
+                plotGridPath = negatedPath;
+              }
+            }
+          }
+
+          fs::path oceanOnlyPath = fs::temp_directory_path() / (bathyTag + "_ocean.grd");
+          fs::path landOnlyPath = fs::temp_directory_path() / (bathyTag + "_land.grd");
+          bathyPalettePath = fs::temp_directory_path() / (bathyTag + "_ocean.cpt");
+          landPalettePath = fs::temp_directory_path() / (bathyTag + "_land.cpt");
+
+          std::ostringstream oceanClip, oceanCpt, landClip, landCpt;
+          oceanClip << "gmt grdclip \"" << plotGridPath.string() << "\" -Sa0/NaN -G\"" << oceanOnlyPath.string() << "\"";
+          executeCommand(oceanClip.str(), false);
+          oceanCpt << "gmt grd2cpt \"" << oceanOnlyPath.string() << "\" -C" << bathyCpt << " -Z -D > \"" << bathyPalettePath.string() << "\"";
+          executeCommand(oceanCpt.str(), false);
+
+          landClip << "gmt grdclip \"" << plotGridPath.string() << "\" -Sb0/NaN -Sa8850/NaN -G\"" << landOnlyPath.string() << "\"";
+          executeCommand(landClip.str(), false);
+          landCpt << "gmt grd2cpt \"" << landOnlyPath.string() << "\" -C" << bathyCpt << " -D > \"" << landPalettePath.string() << "\"";
+          executeCommand(landCpt.str(), false);
+
+          bathyPath = oceanOnlyPath;
+          landPath = landOnlyPath;
         }
         else
         {
-          cptCmd << "gmt makecpt -C" << bathyCpt << (bathyInvert ? " -I" : "") << " -D > \"" << bathyPalettePath.string() << "\"";
+          string bathyCpt = options.get("bathy_cpt");
+          if (bathyCpt.empty() || !std::all_of(bathyCpt.begin(), bathyCpt.end(),
+              [](char c){ return std::isalnum((unsigned char)c) || c == '_' || c == '-'; }))
+          {
+            bathyCpt = "gray";
+          }
+          bathyPalettePath = fs::temp_directory_path() / (bathyTag + ".cpt");
+          std::ostringstream cptCmd;
+          if (bathyCpt == "gray")
+          {
+            cptCmd << "gmt grd2cpt \"" << bathyPath.string() << "\" -Cgray" << (bathyInvert ? " -I" : "") << " -D > \"" << bathyPalettePath.string() << "\"";
+          }
+          else
+          {
+            cptCmd << "gmt makecpt -C" << bathyCpt << (bathyInvert ? " -I" : "") << " -D > \"" << bathyPalettePath.string() << "\"";
+          }
+          executeCommand(cptCmd.str(), false);
         }
-        executeCommand(cptCmd.str(), false);
       }
     }
 
@@ -4198,8 +4307,14 @@ namespace TsunamiPlot
       fs::path maskedPath = fs::temp_directory_path() / (gridPath.stem().string() + "_masked.grd");
       {
         std::ostringstream clipCmd;
+        // -Sr-99/NaN additionally strips near-field's dry-land sentinel: N2's
+        // snapz_kernel writes exactly -99.0f for land/no-water cells (not an
+        // actual NaN), which -Si alone doesn't catch since it's far outside
+        // the near-zero mask range -- left unmasked, it painted the entire
+        // land area with the palette's flat background color instead of
+        // letting the bathymetry show through.
         clipCmd << "gmt grdclip \"" << gridPath.string() << "\" -Si-" << maskThresh << "/" << maskThresh
-                << "/NaN -G\"" << maskedPath.string() << "\"";
+                << "/NaN -Sr-99/NaN -G\"" << maskedPath.string() << "\"";
         executeCommand(clipCmd.str(), false);
       }
 
@@ -4215,7 +4330,8 @@ namespace TsunamiPlot
           title, timestamp,
           extentStr, scaleLengthKm, y0,
           plotCoast, coastRes,
-          outBase.string());
+          outBase.string(),
+          showBathy ? landPath.string() : "", landPalettePath.string());
 
       int exitCode = executeCommand(scriptPath.string(), true);
 
@@ -4512,8 +4628,14 @@ namespace TsunamiPlot
       fs::path maskedPath = fs::temp_directory_path() / (gridPath.stem().string() + "_masked.grd");
       {
         std::ostringstream clipCmd;
+        // -Sr-99/NaN additionally strips near-field's dry-land sentinel: N2's
+        // snapz_kernel writes exactly -99.0f for land/no-water cells (not an
+        // actual NaN), which -Si alone doesn't catch since it's far outside
+        // the near-zero mask range -- left unmasked, it painted the entire
+        // land area with the palette's flat background color instead of
+        // letting the bathymetry show through.
         clipCmd << "gmt grdclip \"" << gridPath.string() << "\" -Si-" << maskThresh << "/" << maskThresh
-                << "/NaN -G\"" << maskedPath.string() << "\"";
+                << "/NaN -Sr-99/NaN -G\"" << maskedPath.string() << "\"";
         executeCommand(clipCmd.str(), false);
       }
 
